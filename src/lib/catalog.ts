@@ -1,5 +1,6 @@
 import heartthrobHotlineImage from "@/assets/heartthrob-hotline.jpeg.asset.json";
 import morningSliceImage from "@/assets/morning-slice.jpg.asset.json";
+import blueberryBluffImage from "@/assets/blueberry-bluff.jpg.asset.json";
 
 export type ProductCategory =
   | "Art Postcards"
@@ -73,6 +74,8 @@ const heartthrobHotline = allProducts.find((product) => product.slug === "heartt
 if (heartthrobHotline) heartthrobHotline.image = heartthrobHotlineImage.url;
 const morningSlice = allProducts.find((product) => product.slug === "morning-slice");
 if (morningSlice) morningSlice.image = morningSliceImage.url;
+const blueberryBluff = allProducts.find((product) => product.slug === "blueberry-bluff");
+if (blueberryBluff) blueberryBluff.image = blueberryBluffImage.url;
 export const newArrivals = allProducts.filter((product) => product.isNew);
 export const reelFeatures = allProducts.filter((product) => product.featured);
 export const getProduct = (slug: string) => allProducts.find((product) => product.slug === slug);
