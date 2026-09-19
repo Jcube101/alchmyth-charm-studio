@@ -1,3 +1,5 @@
+import heartthrobHotlineImage from "@/assets/heartthrob-hotline.jpeg.asset.json";
+
 export type ProductCategory =
   | "Art Postcards"
   | "Artistic Epoxy Keychains"
@@ -22,6 +24,7 @@ export type Product = {
   featured?: boolean;
   outOfStock?: boolean;
   pricingSku?: "bag-charm";
+  image?: string;
 };
 
 export const categories: ProductCategory[] = [
@@ -65,6 +68,8 @@ const categoryExtras: Product[] = [
 ];
 
 export const allProducts: Product[] = [...products, ...reelProducts, ...categoryExtras];
+const heartthrobHotline = allProducts.find((product) => product.slug === "heartthrob-hotline");
+if (heartthrobHotline) heartthrobHotline.image = heartthrobHotlineImage.url;
 export const newArrivals = allProducts.filter((product) => product.isNew);
 export const reelFeatures = allProducts.filter((product) => product.featured);
 export const getProduct = (slug: string) => allProducts.find((product) => product.slug === slug);
