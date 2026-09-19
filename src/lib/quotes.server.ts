@@ -1,7 +1,15 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import type { Json } from "@/integrations/supabase/types";
 import { buildInvoiceHtml } from "./quote-invoice.server";
+import {
+  claimSubmission,
+  consumeSubmitRateLimit,
+  failDelivery,
+  finalizeSubmission,
+  findQuote,
+  insertQuote,
+  setQuoteStatus,
+  type StoredQuoteRow,
+} from "./quote-store.server";
 import {
   buildQuotePayload,
   customerSchema,
@@ -25,80 +33,54 @@ export type QuoteRecord = {
   submission_claim_token: string | null;
 };
 
-async function database() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 const id = () => `ALC-${Math.floor(100000 + Math.random() * 900000)}`;
 
-function recordFromRow(value: {
-  quote_id: string;
-  payload: Json;
-  customer: Json;
-  status: string;
-  created_at: string;
-  submitted_at: string | null;
-  last_error: string | null;
-  submission_claimed_at: string | null;
-  submission_claim_token: string | null;
-}): QuoteRecord {
+function recordFromRow(value: StoredQuoteRow): QuoteRecord {
   return {
-    ...value,
+    quote_id: value.quoteId,
     payload: value.payload as unknown as QuotePayload,
     customer: value.customer as z.infer<typeof customerSchema>,
+    status: value.status,
+    created_at: value.createdAt,
+    submitted_at: value.submittedAt,
+    last_error: value.lastError,
+    submission_claimed_at: value.submissionClaimedAt,
+    submission_claim_token: value.submissionClaimToken,
   };
 }
 
 export async function createQuote(input: z.infer<typeof quoteInputSchema>, origin: string) {
-  const db = await database();
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const quoteId = id();
     const payload = buildQuotePayload(input, quoteId, origin);
-    const { error } = await db.from("quotes").insert({
-      quote_id: quoteId,
-      payload: payload as unknown as Json,
-      customer: payload.customer as unknown as Json,
+    const inserted = await insertQuote({
+      quoteId,
+      payload,
+      customer: payload.customer,
       status: "generated",
-      created_at: payload.created_at,
+      createdAt: payload.created_at,
     });
-    if (!error) {
+    if (inserted) {
       console.info(`[quote] ${quoteId} generated`);
       return payload;
     }
-    if (error.code !== "23505") throw new Error("Unable to save quote");
   }
   throw new Error("Unable to generate a unique quote reference");
 }
 
 export async function getQuote(quoteId: string): Promise<QuoteRecord | null> {
-  const db = await database();
-  const { data, error } = await db.from("quotes").select("*").eq("quote_id", quoteId).maybeSingle();
-  if (error) throw new Error("Unable to load quote");
+  const data = await findQuote(quoteId);
   return data ? recordFromRow(data) : null;
 }
 
 export async function claimQuoteSubmission(quoteId: string) {
-  const db = await database();
   const claimedAt = istTimestamp();
   const staleBefore = istTimestamp(new Date(Date.now() - 60_000));
-  const { data, error } = await db.rpc("claim_quote_submission", {
-    p_quote_id: quoteId,
-    p_claimed_at: claimedAt,
-    p_stale_before: staleBefore,
-  });
-  if (error) throw new Error("Unable to reserve quote submission");
-  return data ?? null;
+  return claimSubmission(quoteId, claimedAt, staleBefore);
 }
 
 export async function checkQuoteSubmitRateLimit(key: string, now = Date.now()) {
-  const db = await database();
-  const { data, error } = await db.rpc("check_quote_submit_rate_limit", {
-    p_key: key,
-    p_now: now,
-  });
-  if (error) throw new Error("Unable to check quote submission limit");
-  return data;
+  return consumeSubmitRateLimit(key, now);
 }
 
 export function submittedPayload(
@@ -131,23 +113,15 @@ export async function submitQuote(
   const nextStatus = ["approved", "rejected", "sent"].includes(existing.status)
     ? existing.status
     : "pending_approval";
-  const db = await database();
-  const { data, error } = await db
-    .from("quotes")
-    .update({
-      payload: webhookPayload as unknown as Json,
-      customer: customer as unknown as Json,
-      submitted_at: webhookPayload.submitted_at,
-      status: nextStatus,
-      last_error: null,
-      submission_claimed_at: null,
-      submission_claim_token: null,
-    })
-    .eq("quote_id", quoteId)
-    .eq("submission_claim_token", claimToken)
-    .select("*")
-    .maybeSingle();
-  if (error) throw new Error("Unable to finalize quote submission");
+  const data = await finalizeSubmission(quoteId, claimToken, {
+    payload: webhookPayload,
+    customer,
+    submittedAt: webhookPayload.submitted_at,
+    status: nextStatus,
+    lastError: null,
+    submissionClaimedAt: null,
+    submissionClaimToken: null,
+  });
   if (!data) return null;
   const updated = recordFromRow(data);
   console.info(`[quote] ${quoteId} -> ${updated.status}`);
@@ -156,18 +130,7 @@ export async function submitQuote(
 
 export async function markDeliveryFailed(quoteId: string, claimToken: string, error: string) {
   if (!z.string().uuid().safeParse(claimToken).success) return;
-  const db = await database();
-  const { error: updateError } = await db
-    .from("quotes")
-    .update({
-      status: "delivery_failed",
-      last_error: error.slice(0, 200),
-      submission_claimed_at: null,
-      submission_claim_token: null,
-    })
-    .eq("quote_id", quoteId)
-    .eq("submission_claim_token", claimToken);
-  if (updateError) throw new Error("Unable to record quote delivery failure");
+  await failDelivery(quoteId, claimToken, error);
 }
 
 export async function updateQuoteStatus(
@@ -182,14 +145,8 @@ export async function updateQuoteStatus(
     ["generated", "delivery_failed", "pending_approval"].includes(existing.status) ||
     (existing.status === "approved" && status === "sent");
   if (!allowed) return existing;
-  const db = await database();
-  const { data, error } = await db
-    .from("quotes")
-    .update({ status })
-    .eq("quote_id", quoteId)
-    .select("*")
-    .single();
-  if (error) throw new Error("Unable to update quote status");
+  const data = await setQuoteStatus(quoteId, status);
+  if (!data) return null;
   console.info(`[quote] ${quoteId} -> ${status}`);
   return recordFromRow(data);
 }

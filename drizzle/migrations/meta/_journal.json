@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1789816118089,
-      "tag": "0000_create_quote_pipeline_storage",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1789816144053,
-      "tag": "0001_add_quote_pipeline_atomic_operations",
+      "when": 1789820695320,
+      "tag": "0000_glamorous_cammi",
       "breakpoints": true
     }
   ]
