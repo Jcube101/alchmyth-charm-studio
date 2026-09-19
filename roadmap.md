@@ -6,4 +6,4 @@
 - [x] Build bulk calculator and quote confirmation flow
 - [x] Verify tests, preview behavior, and responsive layouts
 - [x] Replace the cart drawer with the animated cart and order summary
-- [ ] Build three-mode bag charm ordering and quote uploads
+- [x] Build three-mode bag charm ordering and quote uploads
