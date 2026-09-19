@@ -31,30 +31,32 @@ const customer = {
 };
 
 describe("quote submission persistence", () => {
-  it("only lets the claim owner release a submission lease", () => {
-    const quote = createQuote(input, "https://example.com");
-    const token = claimQuoteSubmission(quote.quote_id);
+  it("only lets the claim owner release a submission lease", async () => {
+    const quote = await createQuote(input, "https://example.com");
+    const token = await claimQuoteSubmission(quote.quote_id);
 
     expect(token).toBeTruthy();
-    expect(claimQuoteSubmission(quote.quote_id)).toBeNull();
+    expect(await claimQuoteSubmission(quote.quote_id)).toBeNull();
 
-    markDeliveryFailed(quote.quote_id, "not-the-owner", "ignored");
-    expect(claimQuoteSubmission(quote.quote_id)).toBeNull();
+    await markDeliveryFailed(quote.quote_id, "not-the-owner", "ignored");
+    expect(await claimQuoteSubmission(quote.quote_id)).toBeNull();
 
-    markDeliveryFailed(quote.quote_id, token!, "delivery failed");
-    expect(claimQuoteSubmission(quote.quote_id)).toBeTruthy();
+    if (!token) throw new Error("Expected a claim token");
+    await markDeliveryFailed(quote.quote_id, token, "delivery failed");
+    expect(await claimQuoteSubmission(quote.quote_id)).toBeTruthy();
   });
 
-  it("preserves an approval callback that arrives before submission finalizes", () => {
-    const quote = createQuote(input, "https://example.com");
-    const token = claimQuoteSubmission(quote.quote_id);
+  it("preserves an approval callback that arrives before submission finalizes", async () => {
+    const quote = await createQuote(input, "https://example.com");
+    const token = await claimQuoteSubmission(quote.quote_id);
     expect(token).toBeTruthy();
 
-    updateQuoteStatus(quote.quote_id, "approved");
+    await updateQuoteStatus(quote.quote_id, "approved");
     const payload = submittedPayload(quote, customer);
-    const updated = submitQuote(quote.quote_id, customer, payload, token!);
+    if (!token) throw new Error("Expected a claim token");
+    const updated = await submitQuote(quote.quote_id, customer, payload, token);
 
     expect(updated?.status).toBe("approved");
-    expect(getQuote(quote.quote_id)?.submitted_at).toBe(payload.submitted_at);
+    expect((await getQuote(quote.quote_id))?.submitted_at).toBe(payload.submitted_at);
   });
 });

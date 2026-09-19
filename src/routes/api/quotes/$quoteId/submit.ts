@@ -57,9 +57,9 @@ export const Route = createFileRoute("/api/quotes/$quoteId/submit")({
           request.headers.get("x-real-ip") ??
           forwarded ??
           "unknown";
-        if (!checkQuoteSubmitRateLimit(`${clientIp}:${params.quoteId}`))
+        if (!(await checkQuoteSubmitRateLimit(`${clientIp}:${params.quoteId}`)))
           return Response.json({ error: "Too many requests" }, { status: 429 });
-        const record = getQuote(params.quoteId);
+        const record = await getQuote(params.quoteId);
         if (!record) return Response.json({ error: "Quote not found" }, { status: 404 });
         const parsed = customerSchema.safeParse(await request.json());
         if (!parsed.success)
@@ -68,9 +68,9 @@ export const Route = createFileRoute("/api/quotes/$quoteId/submit")({
             { status: 400 },
           );
         if (record.submitted_at) return Response.json(publicQuote(record));
-        const claimToken = claimQuoteSubmission(params.quoteId);
+        const claimToken = await claimQuoteSubmission(params.quoteId);
         if (!claimToken) {
-          const latest = getQuote(params.quoteId);
+          const latest = await getQuote(params.quoteId);
           if (latest?.submitted_at) return Response.json(publicQuote(latest));
           return Response.json(
             { error: "This quote is already being submitted. Please wait a moment." },
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/api/quotes/$quoteId/submit")({
         try {
           await sendWebhook(payload);
         } catch (error) {
-          markDeliveryFailed(
+          await markDeliveryFailed(
             params.quoteId,
             claimToken,
             error instanceof Error ? error.message : "Webhook delivery failed",
@@ -91,7 +91,7 @@ export const Route = createFileRoute("/api/quotes/$quoteId/submit")({
             { status: 502 },
           );
         }
-        const updated = submitQuote(params.quoteId, parsed.data, payload, claimToken);
+        const updated = await submitQuote(params.quoteId, parsed.data, payload, claimToken);
         return updated
           ? Response.json(publicQuote(updated))
           : Response.json(
