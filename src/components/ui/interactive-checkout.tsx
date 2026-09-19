@@ -1,14 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import { ArrowLeft, CreditCard, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CreditCard, LoaderCircle, Minus, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductArt } from "@/components/store/product-art";
 import { formatINR, type Product } from "@/lib/catalog";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
 
 type CheckoutItem = { product: Product; quantity: number };
+
+type RazorpayResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void | Promise<void>;
+  modal: { ondismiss: () => void };
+  theme: { color: string };
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+  }
+}
 
 type InteractiveCheckoutProps = {
   cart: CheckoutItem[];
@@ -24,6 +50,10 @@ export function InteractiveCheckout({
   onContinueShopping,
 }: InteractiveCheckoutProps) {
   const [view, setView] = useState<"cart" | "summary">("cart");
+  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const createOrder = useServerFn(createRazorpayOrder);
+  const verifyPayment = useServerFn(verifyRazorpayPayment);
   const reduceMotion = useReducedMotion();
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -31,6 +61,56 @@ export function InteractiveCheckout({
   useEffect(() => {
     if (cart.length === 0) setView("cart");
   }, [cart.length]);
+
+  async function loadRazorpay() {
+    if (window.Razorpay) return true;
+    return new Promise<boolean>((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  async function beginPayment() {
+    setPaymentState("loading");
+    setPaymentMessage("");
+    try {
+      const loaded = await loadRazorpay();
+      if (!loaded || !window.Razorpay) throw new Error("The secure checkout could not load. Please check your connection and try again.");
+      const order = await createOrder({ data: { items: cart.map(({ product, quantity }) => ({ slug: product.slug, quantity })) } });
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Alchmyth",
+        description: `${totalItems} Ready Made item${totalItems === 1 ? "" : "s"}`,
+        order_id: order.orderId,
+        handler: async (response) => {
+          try {
+            await verifyPayment({ data: {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            } });
+            setPaymentState("success");
+            setPaymentMessage(`Test payment verified · ${response.razorpay_payment_id}`);
+          } catch {
+            setPaymentState("error");
+            setPaymentMessage("The payment could not be verified. No order has been confirmed.");
+          }
+        },
+        modal: { ondismiss: () => setPaymentState("idle") },
+        theme: { color: "#02682C" },
+      });
+      checkout.open();
+    } catch (error) {
+      setPaymentState("error");
+      setPaymentMessage(error instanceof Error ? error.message : "The test payment could not start. Please try again.");
+    }
+  }
 
   const transition = reduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const };
 
@@ -123,11 +203,22 @@ export function InteractiveCheckout({
             </div>
             <div className="pt-5">
               <div className="flex items-center justify-between border-b border-border pb-4"><span className="font-display text-lg font-medium">Order total</span><span className="font-display text-2xl font-medium text-primary"><NumberFlow value={totalPrice} format={{ style: "currency", currency: "INR", maximumFractionDigits: 0 }} locales="en-IN" /></span></div>
-              <div className="mt-5 border border-primary bg-secondary p-5 text-center">
-                <span className="mx-auto grid size-10 place-items-center bg-primary text-primary-foreground"><ShoppingBag className="size-5" /></span>
-                <p className="mt-4 font-display text-xl font-medium text-primary">Payment coming soon</p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Your order is not placed or saved. Online checkout will be available in a future update.</p>
-              </div>
+              {paymentState === "success" ? (
+                <div className="mt-5 border border-success bg-secondary p-5 text-center" role="status">
+                  <CheckCircle2 className="mx-auto size-10 text-success" />
+                  <p className="mt-4 font-display text-xl font-medium text-primary">Test payment successful</p>
+                  <p className="mt-2 break-all text-sm leading-6 text-muted-foreground">{paymentMessage}</p>
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <Button size="lg" className="w-full" onClick={beginPayment} disabled={paymentState === "loading"}>
+                    {paymentState === "loading" ? <LoaderCircle className="animate-spin" /> : <CreditCard />}
+                    {paymentState === "loading" ? "Opening secure checkout…" : `Pay ${formatINR(totalPrice)}`}
+                  </Button>
+                  <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4 text-success" /> Secure Razorpay Test Mode checkout</p>
+                  {paymentState === "error" && <p className="mt-3 text-center text-sm text-destructive" role="alert">{paymentMessage}</p>}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

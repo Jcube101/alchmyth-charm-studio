@@ -7,3 +7,5 @@
 - [x] Verify tests, preview behavior, and responsive layouts
 - [x] Replace the cart drawer with the animated cart and order summary
 - [x] Build three-mode bag charm ordering and quote uploads
+
+- [ ] Add Razorpay test checkout for Ready Made cart purchases
