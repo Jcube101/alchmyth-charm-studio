@@ -1,0 +1,8 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { Instagram, Mail } from "lucide-react";
+export const Route = createFileRoute("/contact")({ head: () => ({ meta: [
+  { title: "Contact — Alchmyth" }, { name: "description", content: "Get in touch with Alchmyth about handmade orders, collaborations and questions." },
+  { property: "og:title", content: "Contact — Alchmyth" }, { property: "og:description", content: "Say hello to the Alchmyth studio." },
+  { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+] }), component: ContactPage });
+function ContactPage() { return <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6"><span className="text-6xl">💌</span><h1 className="mt-6 font-display text-5xl">Come say hello</h1><p className="mx-auto mt-5 max-w-xl leading-7 text-muted-foreground">Questions, collaborations, wholesale daydreams, or just want to share where your charm ended up? We’d love to hear from you.</p><div className="mt-10 grid gap-3 sm:grid-cols-2"><div className="rounded-card border border-border bg-card p-6"><Mail className="mx-auto text-primary"/><p className="mt-3 font-semibold">Email the studio</p><p className="text-sm text-muted-foreground">Contact details coming soon</p></div><div className="rounded-card border border-border bg-card p-6"><Instagram className="mx-auto text-primary"/><p className="mt-3 font-semibold">Instagram</p><p className="text-sm text-muted-foreground">@alchmyth</p></div></div></div>; }
