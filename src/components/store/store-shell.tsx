@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Mail, Menu, Minus, Plus, Search, ShoppingBag, Trash2, UserRound } from "lucide-react";
+import { Mail, Menu, Search, ShoppingBag, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { allProducts, formatINR } from "@/lib/catalog";
 import { StoreProvider, useStore } from "@/features/store/store-context";
-import { ProductArt } from "./product-art";
+import { InteractiveCheckout } from "@/components/ui/interactive-checkout";
 
 function Header() {
   const { cart, cartOpen, searchOpen, setCartOpen, setSearchOpen } = useStore();
@@ -40,8 +40,7 @@ function MenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
 }
 function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { cart, updateQuantity, removeFromCart } = useStore();
-  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent className="flex w-full flex-col bg-background sm:max-w-md"><SheetHeader><SheetTitle className="font-display text-2xl">Your little collection</SheetTitle><SheetDescription>{cart.length ? `${cart.length} lovely thing${cart.length === 1 ? "" : "s"}` : "Your cart is waiting for something lovely."}</SheetDescription></SheetHeader>{cart.length === 0 ? <div className="grid flex-1 place-items-center text-center"><div><span className="text-6xl">🧺</span><p className="mt-4 text-muted-foreground">Nothing here yet.</p><Button asChild className="mt-5"><Link to="/category/all-products" search={{ category: "all" }} onClick={() => onOpenChange(false)}>Browse all</Link></Button></div></div> : <><div className="mt-6 flex-1 space-y-5 overflow-auto">{cart.map(({ product, quantity }) => <div key={product.slug} className="flex gap-3"><ProductArt product={product} className="size-20 shrink-0 rounded-md"/><div className="min-w-0 flex-1"><p className="font-semibold">{product.name}</p><p className="text-sm text-muted-foreground">{formatINR(product.price)}</p><div className="mt-2 flex items-center gap-2"><Button variant="outline" size="icon" className="size-7" onClick={() => updateQuantity(product.slug, quantity - 1)}><Minus/></Button><span className="w-5 text-center text-sm">{quantity}</span><Button variant="outline" size="icon" className="size-7" onClick={() => updateQuantity(product.slug, quantity + 1)}><Plus/></Button><Button variant="ghost" size="icon" className="ml-auto size-7" onClick={() => removeFromCart(product.slug)} aria-label={`Remove ${product.name}`}><Trash2/></Button></div></div></div>)}</div><div className="border-t border-border pt-5"><div className="flex justify-between font-display text-xl"><span>Subtotal</span><span>{formatINR(subtotal)}</span></div><p className="mt-1 text-xs text-muted-foreground">Shipping and checkout are coming soon.</p><Button className="mt-4 w-full" disabled>Checkout coming soon</Button></div></>}</SheetContent></Sheet>;
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7"><SheetHeader className="pr-10 text-left"><p className="text-[10px] font-semibold uppercase text-primary">Your selection</p><SheetTitle className="font-display text-2xl font-medium text-primary">Little collection</SheetTitle><SheetDescription>{cart.length ? "Made slowly, chosen thoughtfully." : "Your cart is waiting for something lovely."}</SheetDescription></SheetHeader><div className="mt-6 flex min-h-0 flex-1"><InteractiveCheckout cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} onContinueShopping={() => onOpenChange(false)} /></div></SheetContent></Sheet>;
 }
 function SearchSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [query, setQuery] = useState("");
