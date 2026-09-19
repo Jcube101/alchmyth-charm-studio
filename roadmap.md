@@ -9,3 +9,4 @@
 - [x] Build three-mode bag charm ordering and quote uploads
 
 - [ ] Add Razorpay test checkout for Ready Made cart purchases
+- [ ] Verify GitHub sync before further edits (connected integration auto-syncs; direct pull is managed by Lovable)
