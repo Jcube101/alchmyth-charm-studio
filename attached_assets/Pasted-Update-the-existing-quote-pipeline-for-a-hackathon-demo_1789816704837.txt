@@ -1,0 +1,24 @@
+Update the existing quote pipeline for a hackathon demo. Do NOT rebuild or remove anything that already works. Make only these changes.
+
+1. CONFIG (fewer things to set up)
+- Only N8N_WEBHOOK_URL is required, with this default: https://n8n.job-joseph.com/webhook/8ae8e578-01e4-4ccc-89de-446a34bbf046
+- N8N_WEBHOOK_SECRET and QUOTE_CALLBACK_SECRET become optional. Send the X-Webhook-Secret header only if the secret is set. Skip the callback secret check if QUOTE_CALLBACK_SECRET is unset.
+- If PUBLIC_BASE_URL is not set, fall back to https://$REPLIT_DEV_DOMAIN.
+- The dev-test route should work without X-Dev-Secret.
+
+2. NEW FIELDS in the webhook payload (both the real submit and dev-test):
+- "invoice_html": a complete, self-contained HTML document for the quote (spec below)
+- "pdf_filename": "Quote-<quote_id>.pdf"
+
+3. invoice_html SPEC
+- Built on the server from the same canonical quote data. Never from client input.
+- A4, print-friendly, all CSS inline in a <style> tag. NO external fonts, images, scripts or links. Use a system font stack, and inline SVG if a logo is needed.
+- Match the site's brand colours and tone (look at the existing styles).
+- Contents: brand name at the top, "Quote" title, quote ID, created date, valid-until date, a "Prepared for" block (name, email, phone, company, GSTIN if present), a line-items table (description, qty, unit price, amount), totals (subtotal, tax only if present, total), an advance-to-confirm row showing the actual rupee amount and percent, and footer terms ("Quote valid until <date>. 50% advance to confirm.").
+- Show rupees with Indian digit grouping, e.g. ₹1,620 and ₹48,600 (convert from paise for display only).
+- HTML-escape every customer-supplied string (name, company, etc.) to prevent HTML injection.
+
+4. PREVIEW ROUTE
+- Add GET /api/quotes/dev-preview that returns the invoice_html for a hardcoded sample quote (ALC-206371, 30 units at ₹1,620) with sample customer data, so I can eyeball the design in a browser. Register it before any /api/quotes/:quote_id route. It must not return real customer data.
+
+Leave the modal, pricing logic, persistence, and existing endpoints as they are. When done, show me the dev-test curl and the preview URL.

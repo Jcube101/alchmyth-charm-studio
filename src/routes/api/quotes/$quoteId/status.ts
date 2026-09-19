@@ -4,10 +4,8 @@ export const Route = createFileRoute("/api/quotes/$quoteId/status")({
   server: {
     handlers: {
       POST: async ({ request, params }) => {
-        if (
-          !process.env["QUOTE_CALLBACK_SECRET"] ||
-          request.headers.get("x-callback-secret") !== process.env["QUOTE_CALLBACK_SECRET"]
-        )
+        const callbackSecret = process.env["QUOTE_CALLBACK_SECRET"];
+        if (callbackSecret && request.headers.get("x-callback-secret") !== callbackSecret)
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         const body = (await request.json()) as {
           status?: "approved" | "rejected" | "sent";

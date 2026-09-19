@@ -11,9 +11,10 @@ import {
 } from "@/lib/quotes.server";
 
 export async function sendWebhook(payload: unknown) {
-  const url = process.env["N8N_WEBHOOK_URL"];
+  const url =
+    process.env["N8N_WEBHOOK_URL"] ??
+    "https://n8n.job-joseph.com/webhook/8ae8e578-01e4-4ccc-89de-446a34bbf046";
   const secret = process.env["N8N_WEBHOOK_SECRET"];
-  if (!url || !secret) throw new Error("Quote delivery is not configured");
   let lastError = "Webhook delivery failed";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -21,7 +22,7 @@ export async function sendWebhook(payload: unknown) {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-webhook-secret": secret,
+          ...(secret ? { "x-webhook-secret": secret } : {}),
           "idempotency-key":
             typeof payload === "object" &&
             payload !== null &&

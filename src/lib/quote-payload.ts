@@ -132,4 +132,6 @@ export type SubmittedQuotePayload = Omit<QuotePayload, "event" | "submitted_at" 
   event: "quote.submitted";
   submitted_at: string;
   customer: z.infer<typeof customerSchema>;
+  invoice_html: string;
+  pdf_filename: string;
 };

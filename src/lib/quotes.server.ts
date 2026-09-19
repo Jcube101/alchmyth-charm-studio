@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import { z } from "zod";
+import { buildInvoiceHtml } from "./quote-invoice.server";
 import {
   buildQuotePayload,
   customerSchema,
@@ -125,11 +126,16 @@ export function submittedPayload(
   webhookPayload: QuotePayload,
   customer: z.infer<typeof customerSchema>,
 ) {
-  return {
+  const submitted = {
     ...webhookPayload,
     event: "quote.submitted" as const,
     submitted_at: istTimestamp(),
     customer,
+  };
+  return {
+    ...submitted,
+    invoice_html: buildInvoiceHtml(submitted),
+    pdf_filename: `Quote-${webhookPayload.quote_id}.pdf`,
   };
 }
 export function submitQuote(

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { submittedPayload } from "./quotes.server";
 import { buildQuotePayload, customerSchema, quoteInputSchema } from "./quote-payload";
 
 const bulkInput = {
@@ -67,6 +68,25 @@ describe("canonical quote payload", () => {
       "Express delivery (10%)",
       "Paid sample first",
     ]);
+  });
+
+  it("adds a self-contained, HTML-safe invoice to submitted webhooks", () => {
+    const quote = buildQuotePayload(bulkInput, "ALC-206371", "https://example.com");
+    const submitted = submittedPayload(quote, {
+      name: "<script>alert('x')</script>",
+      email: "demo@example.com",
+      phone: null,
+      company: "Charm & Co.",
+      gstin: null,
+    });
+
+    expect(submitted.pdf_filename).toBe("Quote-ALC-206371.pdf");
+    expect(submitted.invoice_html).toContain("<!doctype html>");
+    expect(submitted.invoice_html).toContain("₹48,600");
+    expect(submitted.invoice_html).toContain("&lt;script&gt;");
+    expect(submitted.invoice_html).toContain("Charm &amp; Co.");
+    expect(submitted.invoice_html).not.toContain("<script>alert");
+    expect(submitted.invoice_html).not.toContain("https://");
   });
 });
 
