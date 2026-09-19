@@ -1,0 +1,36 @@
+Remove Supabase from this project completely and replace its role with storage that works on Replit. I do not use Supabase, and the quote form currently fails with "Missing Supabase environment variable(s): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Connect Supabase in Lovable Cloud." Do not ask me to connect Supabase or Lovable Cloud.
+
+RULES
+- Do NOT run any git commands (no commit, push, pull, rebase, merge). I handle git myself.
+- Do NOT change: pricing rules in src/lib/pricing.ts and its tests, the Razorpay checkout logic, the n8n webhook integration, the quote invoice generation and preview, or any storefront UI other than what is listed below.
+- Do not add any new paid or external service.
+
+STEP 1: AUDIT FIRST (report before changing anything)
+Search the whole repo (source, config, docs, env files, package.json, bun.lock) for: "supabase", "SUPABASE_", "Lovable Cloud", "@supabase". List every file and what it uses Supabase for. Likely places, but verify with the search: src/integrations/supabase/*, supabase/config.toml, src/start.ts, src/routes/__root.tsx, src/features/store/store-context.tsx, src/lib/quotes.server.ts, src/lib/razorpay.functions.ts, the quote API routes under src/routes/api/quotes/, drizzle/, .env, roadmap.md. For each usage, classify it as:
+  (a) authentication / user sessions
+  (b) data storage (quotes, orders, payments, carts)
+  (c) cron or middleware helpers
+  (d) docs or config only
+Show me this list and your plan, then continue without waiting unless something is ambiguous.
+
+STEP 2: REMOVE
+- Delete the src/integrations/supabase/ folder and supabase/config.toml.
+- Remove the auth attacher, auth middleware, cron-auth and preview auth storage wiring from src/start.ts, src/routes/__root.tsx and anywhere else. The site has no user accounts, so hide the "Log In" link in the header instead of leaving a broken login.
+- Remove every SUPABASE_* reference from code, .env and the Replit Secrets usage. If .env contains secrets, remove them from it. Only non-secret settings may stay in .env.
+- Remove @supabase/* packages from package.json, then regenerate the lockfile (bun install).
+- Remove Supabase and Lovable Cloud mentions from replit.md, roadmap.md and code comments.
+
+STEP 3: REPLACE THE STORAGE
+Whatever Supabase stored (quotes with their status, payment status, and anything else found in the audit) must now persist elsewhere:
+- Use Replit's built-in PostgreSQL through the Drizzle setup that already exists in drizzle/schema.ts. Extend the schema for the quote fields the app needs, and generate and run the migration.
+- Put all reads and writes behind one small repository module (for example src/lib/quote-store.server.ts) so quotes.server.ts and the API routes call that module and nothing else. Keep the function signatures the existing routes and tests already use.
+- The existing flows must keep working: a quote is saved with a reference number, the confirmation card shows it, the n8n webhook fires, the QUOTE_CALLBACK_SECRET status callback updates the stored status, and the invoice preview loads by quote id.
+- If Postgres cannot be set up quickly, fall back to a JSON file store in ./data/ behind the same repository interface, and tell me it needs replacing before real use.
+
+STEP 4: VERIFY
+- The project builds and typechecks with no errors, and the existing tests pass (update tests that mocked Supabase to use the new repository).
+- A repo-wide search for "supabase", "SUPABASE_" and "Lovable Cloud" returns zero results, except the lockfile if unavoidable.
+- End to end in the preview: open a Heartthrob Hotline bag charm page, choose Bulk Order, 30 units, click "Request this quote", fill the form (name, email, event, date), submit. It must show the confirmation card with a quote reference, with no red errors and no console errors.
+- Reload the page and open the invoice preview for that quote to confirm it was persisted.
+
+Finish with a short summary: files deleted, files changed, the new storage approach, any remaining environment variables I must set in Secrets, and anything you could not verify.
