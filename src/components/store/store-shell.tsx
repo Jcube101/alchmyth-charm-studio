@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { allProducts, formatINR } from "@/lib/catalog";
-import { StoreProvider, useStore } from "@/features/store/store-context";
+import { useStore } from "@/features/store/store-context";
 import { InteractiveCheckout } from "@/components/ui/interactive-checkout";
 
 function Header() {
@@ -39,8 +39,8 @@ function MenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
   return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="left" className="bg-background"><SheetHeader><SheetTitle className="font-display text-2xl">alchmyth</SheetTitle><SheetDescription>Little things, made slowly.</SheetDescription></SheetHeader><nav className="mt-10 grid gap-5 text-xl font-semibold"><Link to="/" onClick={() => onOpenChange(false)}>Home</Link><Link to="/category/all-products" search={{ category: "all" }} onClick={() => onOpenChange(false)}>All Products</Link><Link to="/contact" onClick={() => onOpenChange(false)}>Contact</Link></nav></SheetContent></Sheet>;
 }
 function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { cart, updateQuantity, removeFromCart } = useStore();
-  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7"><SheetHeader className="pr-10 text-left"><p className="text-[10px] font-semibold uppercase text-primary">Your selection</p><SheetTitle className="font-display text-2xl font-medium text-primary">Little collection</SheetTitle><SheetDescription>{cart.length ? "Made slowly, chosen thoughtfully." : "Your cart is waiting for something lovely."}</SheetDescription></SheetHeader><div className="mt-6 flex min-h-0 flex-1"><InteractiveCheckout cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} onContinueShopping={() => onOpenChange(false)} /></div></SheetContent></Sheet>;
+  const { cart, checkoutRequest, updateQuantity, removeFromCart } = useStore();
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7"><SheetHeader className="pr-10 text-left"><p className="text-[10px] font-semibold uppercase text-primary">Your selection</p><SheetTitle className="font-display text-2xl font-medium text-primary">Little collection</SheetTitle><SheetDescription>{cart.length ? "Made slowly, chosen thoughtfully." : "Your cart is waiting for something lovely."}</SheetDescription></SheetHeader><div className="mt-6 flex min-h-0 flex-1"><InteractiveCheckout cart={cart} checkoutRequest={checkoutRequest} updateQuantity={updateQuantity} removeFromCart={removeFromCart} onContinueShopping={() => onOpenChange(false)} /></div></SheetContent></Sheet>;
 }
 function SearchSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [query, setQuery] = useState("");
@@ -52,5 +52,5 @@ function Footer() {
   return <footer className="mt-20 border-t border-border bg-secondary"><div className="mx-auto grid max-w-site gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1fr_1.2fr]"><div><p className="font-display text-3xl font-medium text-primary">alchmyth</p><p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">Slow-made clay charms and illustrated paper things from India, full of character and tiny joys.</p><div className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm">{links.map((label) => <span className="hover:text-primary hover:underline" key={label}>{label}</span>)}</div></div><form onSubmit={(event) => event.preventDefault()}><Mail className="mb-3 size-5 text-primary"/><h2 className="font-display text-xl font-medium text-primary">Subscribe for behind-the-scenes messy magic...</h2><div className="mt-4 flex gap-2"><Input type="email" aria-label="Email address" placeholder="you@example.com"/><Button type="submit">Subscribe</Button></div></form></div></footer>;
 }
 export function StoreShell({ children }: { children: ReactNode }) {
-  return <StoreProvider><div className="min-h-screen bg-background"><Header/><main>{children}</main><Footer/></div></StoreProvider>;
+  return <div className="min-h-screen bg-background"><Header/><main>{children}</main><Footer/></div>;
 }
