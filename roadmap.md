@@ -5,4 +5,4 @@
 - [x] Build home, catalogue, product, and contact pages
 - [x] Build bulk calculator and quote confirmation flow
 - [x] Verify tests, preview behavior, and responsive layouts
-- [ ] Replace the cart drawer with the animated cart and order summary
+- [x] Replace the cart drawer with the animated cart and order summary
