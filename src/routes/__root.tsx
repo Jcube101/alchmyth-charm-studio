@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { StoreShell } from "@/components/store/store-shell";
+import { StoreProvider } from "@/features/store/store-context";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -107,7 +108,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <StoreProvider>{children}</StoreProvider>
         <Scripts />
       </body>
     </html>
