@@ -63,7 +63,7 @@ export function snapQuantity(value: number, config: ModeConfig) {
 
 export function calculatePrice(sku: PricingSku, mode: OrderMode, selection: PricingSelection) {
   const productConfig = pricingConfig[sku];
-  const config = productConfig.modes[mode];
+  const config: ModeConfig = productConfig.modes[mode];
   const quantity = snapQuantity(selection.quantity, config);
   const activeTier = [...config.tiers].reverse().find((tier) => quantity >= tier.minimum);
   const discount = activeTier?.discount ?? 0;
