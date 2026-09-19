@@ -10,3 +10,4 @@
 
 - [x] Add Razorpay test checkout for Ready Made cart purchases
 - [x] Verify GitHub sync before further edits (connected integration auto-syncs; direct pull is managed by Lovable)
+- [ ] Auto-open Razorpay for Ready Made cart additions and retain verified order details in a confirmation dialog
