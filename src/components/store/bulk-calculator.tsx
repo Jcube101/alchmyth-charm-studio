@@ -70,7 +70,6 @@ export function OrderCalculator({ product, mode }: { product: Product; mode: Ord
           </div>
           <CalculatorTotals mode={mode} result={result} />
           <Button size="lg" className="mt-6 w-full" onClick={requestQuote}>Request this quote</Button>
-          {designError && <p className="mt-2 text-sm text-destructive" role="alert">{designError}</p>}
           <p className="mt-3 text-center text-xs text-muted-foreground">Quote valid for 7 days. 50% advance to confirm.</p>
           <QuoteDialog open={quoteOpen} onOpenChange={setQuoteOpen} productName={product.name} mode={mode} selection={selection} result={result} initialFiles={mode === "custom" ? designFiles : []} designDescription={designDescription} />
         </>
