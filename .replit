@@ -33,3 +33,15 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "vm"
+run = ["node", ".output/server/index.mjs"]
+build = ["bun", "run", "build"]
+
+[userenv]
+
+[userenv.production]
+GST_RATE = "0"
+N8N_WEBHOOK_URL = "https://n8n.job-joseph.com/webhook/8ae8e578-01e4-4ccc-89de-446a34bbf046"
+TAX_MODE = "none"
