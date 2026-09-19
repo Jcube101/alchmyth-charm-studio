@@ -46,7 +46,7 @@ const products: Product[] = [
   isNew: true, pricingSku: "bag-charm",
 }));
 
-const reelProducts: Product[] = [
+const reelProducts: Product[] = ([
   { slug: "favourite-meal-postcard", name: "Your favourite 🥗 meal postcard", emoji: "🥗 💌", price: 99, category: "Art Postcards", palette: "sage", description: "An original illustrated postcard for tiny notes and thoughtful corners." },
   { slug: "four-leaf-clover-keychain", name: "Four leaf clover epoxy keychain", emoji: "🍀 ✨", price: 99, category: "Artistic Epoxy Keychains", palette: "sage", description: "A pocket-sized lucky charm made from illustrated epoxy." },
   { slug: "lucky-girl-bookmark", name: "Lucky girl syndrome magnetic bookmark", emoji: "🔖 🍀", price: 119, category: "Magnetic Bookmarks", palette: "lilac", description: "A cheerful magnetic bookmark for your current read." },
@@ -55,7 +55,7 @@ const reelProducts: Product[] = [
   { slug: "tomato-worry-stone", name: "Tomato Worry Stone", emoji: "🍅 🤲", price: 249, category: "Handmade Worry Stones", palette: "rose", description: "A smooth handmade clay companion to hold on busy days." },
   { slug: "stickers-pack-14", name: "Stickers / Pack of 14", emoji: "🌈 ✂️", price: 599, category: "Artistic Stickers", palette: "blue", description: "Fourteen original illustrated stickers for journals, laptops and letters." },
   { slug: "do-it-for-the-plot-postcard", name: "Do it for the plot postcard", emoji: "🎬 💌", price: 99, category: "Art Postcards", palette: "butter", description: "An illustrated reminder to choose the memorable option." },
-].map((product) => ({ ...product, featured: true }));
+] as Product[]).map((product) => ({ ...product, featured: true }));
 
 const categoryExtras: Product[] = [
   { slug: "tiny-bloom-earrings", name: "Tiny Bloom Earrings", emoji: "🌼 ✨", price: 649, category: "Charm Earrings", palette: "butter", description: "Delicate handmade charm earrings for everyday joy." },

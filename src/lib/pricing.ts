@@ -47,10 +47,13 @@ export function snapQuantity(value: number, config = pricingConfig["bag-charm"])
 export function calculatePrice(sku: keyof typeof pricingConfig, selection: PricingSelection) {
   const config = pricingConfig[sku];
   const quantity = snapQuantity(selection.quantity, config);
-  const tier = [...config.tiers].reverse().find((item) => quantity >= item.minimum) ?? config.tiers[0];
+  const fallbackTier = config.tiers[0];
+  const fallbackCharm = config.options.charms[0];
+  if (!fallbackTier || !fallbackCharm) throw new Error("Pricing configuration requires a base tier and charm option");
+  const tier = [...config.tiers].reverse().find((item) => quantity >= item.minimum) ?? fallbackTier;
   const tierIndex = config.tiers.indexOf(tier);
   const nextTier = config.tiers[tierIndex + 1];
-  const charm = config.options.charms.find((item) => item.count === selection.charmCount) ?? config.options.charms[0];
+  const charm = config.options.charms.find((item) => item.count === selection.charmCount) ?? fallbackCharm;
   const branding = selection.customBranding ? config.options.branding.perUnit : 0;
   const deliveryMultiplier = config.options.delivery[selection.delivery];
   const discountedBase = config.basePrice * (1 - tier.discount);
