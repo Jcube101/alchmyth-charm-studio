@@ -1,0 +1,1 @@
+- [TanStack SQLite runtime](tanstack-sqlite-runtime.md) — Vite dev route handlers run in a Node worker even when the workflow starts with Bun; use a Node-compatible SQLite driver.

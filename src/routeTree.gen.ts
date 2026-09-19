@@ -13,6 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CategoryAllProductsRouteImport } from './routes/category.all-products'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as ApiQuotesIndexRouteImport } from './routes/api/quotes/index'
+import { Route as ApiQuotesQuoteIdRouteImport } from './routes/api/quotes/$quoteId'
+import { Route as ApiQuotesDevTestRouteImport } from './routes/api/quotes/dev-test'
+import { Route as ApiQuotesQuoteIdStatusRouteImport } from './routes/api/quotes/$quoteId/status'
+import { Route as ApiQuotesQuoteIdSubmitRouteImport } from './routes/api/quotes/$quoteId/submit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +39,53 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
   path: '/product/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiQuotesIndexRoute = ApiQuotesIndexRouteImport.update({
+  id: '/api/quotes/',
+  path: '/api/quotes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesQuoteIdRoute = ApiQuotesQuoteIdRouteImport.update({
+  id: '/api/quotes/$quoteId',
+  path: '/api/quotes/$quoteId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesDevTestRoute = ApiQuotesDevTestRouteImport.update({
+  id: '/api/quotes/dev-test',
+  path: '/api/quotes/dev-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesQuoteIdStatusRoute = ApiQuotesQuoteIdStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => ApiQuotesQuoteIdRoute,
+} as any)
+const ApiQuotesQuoteIdSubmitRoute = ApiQuotesQuoteIdSubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => ApiQuotesQuoteIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
+  '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/quotes/': typeof ApiQuotesIndexRoute
+  '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
+  '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
+  '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/quotes': typeof ApiQuotesIndexRoute
+  '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
+  '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,14 +93,46 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
+  '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/quotes/': typeof ApiQuotesIndexRoute
+  '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
+  '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/contact' | '/category/all-products' | '/product/$slug'
+  fullPaths:
+    | '/'
+    | '/contact'
+    | '/category/all-products'
+    | '/product/$slug'
+    | '/api/quotes/$quoteId'
+    | '/api/quotes/dev-test'
+    | '/api/quotes/'
+    | '/api/quotes/$quoteId/status'
+    | '/api/quotes/$quoteId/submit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/contact' | '/category/all-products' | '/product/$slug'
+  to:
+    | '/'
+    | '/contact'
+    | '/category/all-products'
+    | '/product/$slug'
+    | '/api/quotes/$quoteId'
+    | '/api/quotes/dev-test'
+    | '/api/quotes'
+    | '/api/quotes/$quoteId/status'
+    | '/api/quotes/$quoteId/submit'
   id:
-    '__root__' | '/' | '/contact' | '/category/all-products' | '/product/$slug'
+    | '__root__'
+    | '/'
+    | '/contact'
+    | '/category/all-products'
+    | '/product/$slug'
+    | '/api/quotes/$quoteId'
+    | '/api/quotes/dev-test'
+    | '/api/quotes/'
+    | '/api/quotes/$quoteId/status'
+    | '/api/quotes/$quoteId/submit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -68,6 +140,9 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CategoryAllProductsRoute: typeof CategoryAllProductsRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  ApiQuotesQuoteIdRoute: typeof ApiQuotesQuoteIdRouteWithChildren
+  ApiQuotesDevTestRoute: typeof ApiQuotesDevTestRoute
+  ApiQuotesIndexRoute: typeof ApiQuotesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -100,14 +175,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/quotes/': {
+      id: '/api/quotes/'
+      path: '/api/quotes'
+      fullPath: '/api/quotes/'
+      preLoaderRoute: typeof ApiQuotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/$quoteId': {
+      id: '/api/quotes/$quoteId'
+      path: '/api/quotes/$quoteId'
+      fullPath: '/api/quotes/$quoteId'
+      preLoaderRoute: typeof ApiQuotesQuoteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/dev-test': {
+      id: '/api/quotes/dev-test'
+      path: '/api/quotes/dev-test'
+      fullPath: '/api/quotes/dev-test'
+      preLoaderRoute: typeof ApiQuotesDevTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes/$quoteId/status': {
+      id: '/api/quotes/$quoteId/status'
+      path: '/status'
+      fullPath: '/api/quotes/$quoteId/status'
+      preLoaderRoute: typeof ApiQuotesQuoteIdStatusRouteImport
+      parentRoute: typeof ApiQuotesQuoteIdRoute
+    }
+    '/api/quotes/$quoteId/submit': {
+      id: '/api/quotes/$quoteId/submit'
+      path: '/submit'
+      fullPath: '/api/quotes/$quoteId/submit'
+      preLoaderRoute: typeof ApiQuotesQuoteIdSubmitRouteImport
+      parentRoute: typeof ApiQuotesQuoteIdRoute
+    }
   }
 }
+
+interface ApiQuotesQuoteIdRouteChildren {
+  ApiQuotesQuoteIdStatusRoute: typeof ApiQuotesQuoteIdStatusRoute
+  ApiQuotesQuoteIdSubmitRoute: typeof ApiQuotesQuoteIdSubmitRoute
+}
+
+const ApiQuotesQuoteIdRouteChildren: ApiQuotesQuoteIdRouteChildren = {
+  ApiQuotesQuoteIdStatusRoute: ApiQuotesQuoteIdStatusRoute,
+  ApiQuotesQuoteIdSubmitRoute: ApiQuotesQuoteIdSubmitRoute,
+}
+
+const ApiQuotesQuoteIdRouteWithChildren =
+  ApiQuotesQuoteIdRoute._addFileChildren(ApiQuotesQuoteIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
   CategoryAllProductsRoute: CategoryAllProductsRoute,
   ProductSlugRoute: ProductSlugRoute,
+  ApiQuotesQuoteIdRoute: ApiQuotesQuoteIdRouteWithChildren,
+  ApiQuotesDevTestRoute: ApiQuotesDevTestRoute,
+  ApiQuotesIndexRoute: ApiQuotesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

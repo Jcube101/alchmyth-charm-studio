@@ -1,0 +1,58 @@
+Add a quote-submission pipeline to this app. First, inspect the codebase and find where the quote (reference like ALC-206371, per-unit price, total, "valid for 7 days, 50% advance") is currently calculated and shown in the "Your quote is ready" modal. Do NOT change the existing pricing logic or the look of the site; extend it.
+
+GOAL
+When a customer asks for their quote by email, the backend builds a canonical quote JSON and POSTs it to an n8n webhook. n8n runs an owner-approval flow and then emails the customer. The backend is the single source of truth for all numbers.
+
+ENV VARS (secrets, never sent to the frontend or logged)
+- N8N_WEBHOOK_URL = https://n8n.job-joseph.com/webhook/8ae8e578-01e4-4ccc-89de-446a34bbf046
+- N8N_WEBHOOK_SECRET = shared secret, sent as header "X-Webhook-Secret"
+- QUOTE_CALLBACK_SECRET = secret that n8n must send back to us (header "X-Callback-Secret")
+
+BACKEND
+1. Persist quotes in the existing DB (or SQLite if none) with: quote_id (unique), payload JSON, customer JSON, status, created_at, submitted_at, last_error.
+   Statuses: generated, pending_approval, approved, rejected, sent, delivery_failed.
+2. Quote creation (existing flow): recompute price on the server from the selections, never trust client-sent prices. Save with status "generated" and return the quote JSON to the modal. Keep the current ALC-###### reference format and guarantee uniqueness.
+3. POST /api/quotes/:quote_id/submit
+   - Body: { name, email, phone (optional), company (optional), gstin (optional) }
+   - Validate email format and required fields; return 400 with clear messages.
+   - Idempotent: if already submitted, return the existing status and do NOT re-send to n8n.
+   - Build the payload below, POST it to N8N_WEBHOOK_URL with headers Content-Type: application/json and X-Webhook-Secret. 10s timeout. Retry up to 3 times with exponential backoff on network errors or 5xx; do not retry on 4xx.
+   - On 2xx set status "pending_approval". On final failure set "delivery_failed", store last_error, and return a friendly error (the customer should be able to retry).
+4. POST /api/quotes/:quote_id/status (called only by n8n)
+   - Requires header X-Callback-Secret matching QUOTE_CALLBACK_SECRET, else 401.
+   - Body: { status: "approved" | "rejected" | "sent", note?: string }. Update the record.
+5. GET /api/quotes/:quote_id returns the stored quote (no secrets, no internal errors).
+6. Add a dev-only route or npm script that sends a sample payload to the webhook so I can test the n8n side without using the UI.
+
+WEBHOOK PAYLOAD (amounts in paise as integers, dates ISO 8601 in Asia/Kolkata)
+{
+  "event": "quote.submitted",
+  "quote_id": "ALC-206371",
+  "created_at": "...",
+  "submitted_at": "...",
+  "valid_until": "YYYY-MM-DD",
+  "currency": "INR",
+  "product": { "name": "Heartthrob Hotline", "design": "catalogue" },
+  "order_type": "bulk",
+  "quantity": 30,
+  "options": { "custom_charms": [], "branding": null, "delivery": "standard", "sample": false },
+  "line_items": [ { "description": "...", "qty": 30, "unit_price": 162000, "amount": 4860000 } ],
+  "pricing": { "subtotal": 4860000, "tax": null, "total": 4860000 },
+  "terms": { "advance_percent": 50, "advance_amount": 2430000, "validity_days": 7 },
+  "customer": { "name": "", "email": "", "phone": null, "company": null, "gstin": null },
+  "callback_url": "<this app's public base URL>/api/quotes/ALC-206371/status"
+}
+Rules: add-ons (custom charms, branding, sample, non-standard delivery) become their own line_items rows. valid_until is a real date computed on the server. advance_amount is an actual number. Keep tax null for now but put the tax logic behind one config (TAX_MODE: "none" | "inclusive" | "exclusive", GST_RATE) so I can switch it later.
+
+FRONTEND (modal only)
+- Keep "Copy quote summary" exactly as is.
+- Below the summary add a small form: Name, Email, Phone (optional), and a button "Email me this quote".
+- On submit call /api/quotes/:quote_id/submit. Show loading and error states.
+- On success replace the form with: "Thanks! We're reviewing your quote and will email it to you shortly." Do not promise an instant PDF or show a download link.
+- Disable the button after success so it can't be double-submitted.
+
+QUALITY
+- Never expose the webhook URL or secrets to the browser.
+- Log quote_id and status transitions, not customer PII.
+- Add basic rate limiting on the submit endpoint.
+- When done, list the env vars I need to set and show me one example curl for the dev test route.
