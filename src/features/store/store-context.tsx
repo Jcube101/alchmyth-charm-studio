@@ -5,6 +5,7 @@ type CartItem = { product: Product; quantity: number };
 type StoreContextValue = {
   cart: CartItem[];
   cartOpen: boolean;
+  checkoutRequest: number;
   searchOpen: boolean;
   setCartOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
@@ -18,10 +19,11 @@ const StoreContext = createContext<StoreContextValue | undefined>(undefined);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutRequest, setCheckoutRequest] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const value = useMemo<StoreContextValue>(() => ({
-    cart, cartOpen, searchOpen, setCartOpen, setSearchOpen,
+    cart, cartOpen, checkoutRequest, searchOpen, setCartOpen, setSearchOpen,
     addToCart(product, quantity = 1) {
       if (product.outOfStock) return;
       setCart((items) => {
@@ -31,13 +33,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           : [...items, { product, quantity }];
       });
       setCartOpen(true);
+      setCheckoutRequest((request) => request + 1);
     },
     updateQuantity(slug, quantity) {
       if (quantity < 1) return setCart((items) => items.filter((item) => item.product.slug !== slug));
       setCart((items) => items.map((item) => item.product.slug === slug ? { ...item, quantity } : item));
     },
     removeFromCart(slug) { setCart((items) => items.filter((item) => item.product.slug !== slug)); },
-  }), [cart, cartOpen, searchOpen]);
+  }), [cart, cartOpen, checkoutRequest, searchOpen]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

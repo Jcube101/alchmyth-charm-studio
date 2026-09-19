@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import { ArrowLeft, CheckCircle2, CreditCard, LoaderCircle, Minus, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, CreditCard, LoaderCircle, Minus, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductArt } from "@/components/store/product-art";
 import { formatINR, type Product } from "@/lib/catalog";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
@@ -38,6 +39,7 @@ declare global {
 
 type InteractiveCheckoutProps = {
   cart: CheckoutItem[];
+  checkoutRequest: number;
   updateQuantity: (slug: string, quantity: number) => void;
   removeFromCart: (slug: string) => void;
   onContinueShopping: () => void;
@@ -45,6 +47,7 @@ type InteractiveCheckoutProps = {
 
 export function InteractiveCheckout({
   cart,
+  checkoutRequest,
   updateQuantity,
   removeFromCart,
   onContinueShopping,
@@ -52,6 +55,15 @@ export function InteractiveCheckout({
   const [view, setView] = useState<"cart" | "summary">("cart");
   const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [paymentMessage, setPaymentMessage] = useState("");
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [verifiedOrder, setVerifiedOrder] = useState<{
+    reference: string;
+    razorpayOrderId: string;
+    paymentId: string;
+    items: CheckoutItem[];
+    total: number;
+  } | null>(null);
   const createOrder = useServerFn(createRazorpayOrder);
   const verifyPayment = useServerFn(verifyRazorpayPayment);
   const reduceMotion = useReducedMotion();
@@ -61,6 +73,12 @@ export function InteractiveCheckout({
   useEffect(() => {
     if (cart.length === 0) setView("cart");
   }, [cart.length]);
+
+  useEffect(() => {
+    if (checkoutRequest === 0 || cart.length === 0) return;
+    setView("summary");
+    void beginPayment();
+  }, [checkoutRequest]);
 
   async function loadRazorpay() {
     if (window.Razorpay) return true;
@@ -80,7 +98,9 @@ export function InteractiveCheckout({
     try {
       const loaded = await loadRazorpay();
       if (!loaded || !window.Razorpay) throw new Error("The secure checkout could not load. Please check your connection and try again.");
-      const order = await createOrder({ data: { items: cart.map(({ product, quantity }) => ({ slug: product.slug, quantity })) } });
+      const orderItems = cart.map(({ product, quantity }) => ({ product, quantity }));
+      const orderTotal = orderItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+      const order = await createOrder({ data: { items: orderItems.map(({ product, quantity }) => ({ slug: product.slug, quantity })) } });
       const checkout = new window.Razorpay({
         key: order.keyId,
         amount: order.amount,
@@ -97,6 +117,15 @@ export function InteractiveCheckout({
             } });
             setPaymentState("success");
             setPaymentMessage(`Test payment verified · ${response.razorpay_payment_id}`);
+            setVerifiedOrder({
+              reference: `ALC-${Date.now().toString().slice(-6)}`,
+              razorpayOrderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              items: orderItems,
+              total: orderTotal,
+            });
+            setCopied(false);
+            setConfirmationOpen(true);
           } catch {
             setPaymentState("error");
             setPaymentMessage("The payment could not be verified. No order has been confirmed.");
@@ -208,6 +237,7 @@ export function InteractiveCheckout({
                   <CheckCircle2 className="mx-auto size-10 text-success" />
                   <p className="mt-4 font-display text-xl font-medium text-primary">Test payment successful</p>
                   <p className="mt-2 break-all text-sm leading-6 text-muted-foreground">{paymentMessage}</p>
+                  <Button variant="outline" className="mt-4" onClick={() => setConfirmationOpen(true)}>View order details</Button>
                 </div>
               ) : (
                 <div className="mt-5">
@@ -223,6 +253,20 @@ export function InteractiveCheckout({
           </motion.div>
         )}
       </AnimatePresence>
+      <OrderConfirmationDialog order={verifiedOrder} open={confirmationOpen} copied={copied} onCopied={setCopied} onOpenChange={setConfirmationOpen} />
     </div>
   );
+}
+
+function OrderConfirmationDialog({ order, open, copied, onCopied, onOpenChange }: {
+  order: { reference: string; razorpayOrderId: string; paymentId: string; items: CheckoutItem[]; total: number } | null;
+  open: boolean;
+  copied: boolean;
+  onCopied: (copied: boolean) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!order) return null;
+  const itemLines = order.items.map(({ product, quantity }) => `${product.name} · ${quantity} × ${formatINR(product.price)} = ${formatINR(product.price * quantity)}`);
+  const summary = `${order.reference} — Alchmyth Ready Made order\n${itemLines.join("\n")}\nTotal: ${formatINR(order.total)}\nRazorpay order: ${order.razorpayOrderId}\nPayment: ${order.paymentId}`;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto rounded-card"><DialogHeader><DialogTitle className="font-display text-2xl text-primary">Your order is confirmed</DialogTitle><DialogDescription>Reference {order.reference}</DialogDescription></DialogHeader><div className="bg-secondary p-5"><div className="mb-4 grid size-10 place-items-center bg-success text-primary-foreground"><CheckCircle2 /></div><p className="text-xs font-bold uppercase text-primary">Ready Made · Razorpay Test Mode</p><div className="mt-4 space-y-3">{order.items.map(({ product, quantity }) => <div key={product.slug} className="flex justify-between gap-4 border-b border-border pb-3 text-sm"><div><p className="font-semibold text-primary">{product.name}</p><p className="mt-1 text-xs text-muted-foreground">{quantity} × {formatINR(product.price)}</p></div><span className="font-semibold">{formatINR(product.price * quantity)}</span></div>)}</div><div className="mt-4 flex justify-between font-display text-xl"><span>Total paid</span><strong className="text-primary">{formatINR(order.total)}</strong></div><dl className="mt-5 space-y-2 text-xs"><div><dt className="text-muted-foreground">Razorpay order</dt><dd className="break-all">{order.razorpayOrderId}</dd></div><div><dt className="text-muted-foreground">Payment</dt><dd className="break-all">{order.paymentId}</dd></div></dl><Button variant="outline" className="mt-5 w-full" onClick={async () => { await navigator.clipboard.writeText(summary); onCopied(true); }}><Copy />{copied ? "Copied" : "Copy order summary"}</Button></div></DialogContent></Dialog>;
 }
