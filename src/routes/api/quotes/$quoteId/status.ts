@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/quotes/$quoteId/status")({
         };
         if (!body.status || !["approved", "rejected", "sent"].includes(body.status))
           return Response.json({ error: "Invalid status" }, { status: 400 });
-        const updated = updateQuoteStatus(params.quoteId, body.status, body.note);
+        const updated = await updateQuoteStatus(params.quoteId, body.status, body.note);
         return updated
           ? Response.json(publicQuote(updated))
           : Response.json({ error: "Quote not found" }, { status: 404 });

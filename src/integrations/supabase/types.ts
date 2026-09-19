@@ -14,13 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quote_submit_limits: {
+        Row: {
+          limiter_key: string
+          request_count: number
+          window_started_at: number
+        }
+        Insert: {
+          limiter_key: string
+          request_count: number
+          window_started_at: number
+        }
+        Update: {
+          limiter_key?: string
+          request_count?: number
+          window_started_at?: number
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          created_at: string
+          customer: Json
+          last_error: string | null
+          payload: Json
+          quote_id: string
+          status: string
+          submission_claim_token: string | null
+          submission_claimed_at: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          created_at: string
+          customer?: Json
+          last_error?: string | null
+          payload: Json
+          quote_id: string
+          status: string
+          submission_claim_token?: string | null
+          submission_claimed_at?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer?: Json
+          last_error?: string | null
+          payload?: Json
+          quote_id?: string
+          status?: string
+          submission_claim_token?: string | null
+          submission_claimed_at?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_quote_submit_rate_limit: {
+        Args: {
+          p_key: string
+          p_limit?: number
+          p_now: number
+          p_window_ms?: number
+        }
+        Returns: boolean
+      }
+      claim_quote_submission: {
+        Args: {
+          p_claimed_at: string
+          p_quote_id: string
+          p_stale_before: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/quotes/")({
               { error: parsed.error.issues[0]?.message ?? "Invalid quote selection" },
               { status: 400 },
             );
-          return Response.json(createQuote(parsed.data, publicOrigin(request)), {
+          return Response.json(await createQuote(parsed.data, publicOrigin(request)), {
             status: 201,
           });
         } catch (error) {
