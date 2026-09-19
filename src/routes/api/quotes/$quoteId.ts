@@ -4,8 +4,8 @@ import { getQuote, publicQuote } from "@/lib/quotes.server";
 export const Route = createFileRoute("/api/quotes/$quoteId")({
   server: {
     handlers: {
-      GET: ({ params }) => {
-        const quote = getQuote(params.quoteId);
+      GET: async ({ params }) => {
+        const quote = await getQuote(params.quoteId);
         return quote
           ? Response.json(publicQuote(quote))
           : Response.json({ error: "Quote not found" }, { status: 404 });
