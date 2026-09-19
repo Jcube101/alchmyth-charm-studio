@@ -17,6 +17,8 @@ import { Route as ApiQuotesIndexRouteImport } from './routes/api/quotes/index'
 import { Route as ApiQuotesQuoteIdRouteImport } from './routes/api/quotes/$quoteId'
 import { Route as ApiQuotesDevPreviewRouteImport } from './routes/api/quotes/dev-preview'
 import { Route as ApiQuotesDevTestRouteImport } from './routes/api/quotes/dev-test'
+import { Route as ApiRazorpayOrderRouteImport } from './routes/api/razorpay/order'
+import { Route as ApiRazorpayVerifyRouteImport } from './routes/api/razorpay/verify'
 import { Route as ApiQuotesQuoteIdStatusRouteImport } from './routes/api/quotes/$quoteId/status'
 import { Route as ApiQuotesQuoteIdSubmitRouteImport } from './routes/api/quotes/$quoteId/submit'
 
@@ -60,6 +62,16 @@ const ApiQuotesDevTestRoute = ApiQuotesDevTestRouteImport.update({
   path: '/api/quotes/dev-test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRazorpayOrderRoute = ApiRazorpayOrderRouteImport.update({
+  id: '/api/razorpay/order',
+  path: '/api/razorpay/order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRazorpayVerifyRoute = ApiRazorpayVerifyRouteImport.update({
+  id: '/api/razorpay/verify',
+  path: '/api/razorpay/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiQuotesQuoteIdStatusRoute = ApiQuotesQuoteIdStatusRouteImport.update({
   id: '/status',
   path: '/status',
@@ -79,6 +91,8 @@ export interface FileRoutesByFullPath {
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/razorpay/order': typeof ApiRazorpayOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/quotes/': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -91,6 +105,8 @@ export interface FileRoutesByTo {
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/razorpay/order': typeof ApiRazorpayOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/quotes': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -104,6 +120,8 @@ export interface FileRoutesById {
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
+  '/api/razorpay/order': typeof ApiRazorpayOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/quotes/': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -118,6 +136,8 @@ export interface FileRouteTypes {
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
+    | '/api/razorpay/order'
+    | '/api/razorpay/verify'
     | '/api/quotes/'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -130,6 +150,8 @@ export interface FileRouteTypes {
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
+    | '/api/razorpay/order'
+    | '/api/razorpay/verify'
     | '/api/quotes'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -142,6 +164,8 @@ export interface FileRouteTypes {
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
+    | '/api/razorpay/order'
+    | '/api/razorpay/verify'
     | '/api/quotes/'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -155,6 +179,8 @@ export interface RootRouteChildren {
   ApiQuotesQuoteIdRoute: typeof ApiQuotesQuoteIdRouteWithChildren
   ApiQuotesDevPreviewRoute: typeof ApiQuotesDevPreviewRoute
   ApiQuotesDevTestRoute: typeof ApiQuotesDevTestRoute
+  ApiRazorpayOrderRoute: typeof ApiRazorpayOrderRoute
+  ApiRazorpayVerifyRoute: typeof ApiRazorpayVerifyRoute
   ApiQuotesIndexRoute: typeof ApiQuotesIndexRoute
 }
 
@@ -216,6 +242,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiQuotesDevTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/razorpay/order': {
+      id: '/api/razorpay/order'
+      path: '/api/razorpay/order'
+      fullPath: '/api/razorpay/order'
+      preLoaderRoute: typeof ApiRazorpayOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/razorpay/verify': {
+      id: '/api/razorpay/verify'
+      path: '/api/razorpay/verify'
+      fullPath: '/api/razorpay/verify'
+      preLoaderRoute: typeof ApiRazorpayVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/quotes/$quoteId/status': {
       id: '/api/quotes/$quoteId/status'
       path: '/status'
@@ -254,6 +294,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiQuotesQuoteIdRoute: ApiQuotesQuoteIdRouteWithChildren,
   ApiQuotesDevPreviewRoute: ApiQuotesDevPreviewRoute,
   ApiQuotesDevTestRoute: ApiQuotesDevTestRoute,
+  ApiRazorpayOrderRoute: ApiRazorpayOrderRoute,
+  ApiRazorpayVerifyRoute: ApiRazorpayVerifyRoute,
   ApiQuotesIndexRoute: ApiQuotesIndexRoute,
 }
 export const routeTree = rootRouteImport
