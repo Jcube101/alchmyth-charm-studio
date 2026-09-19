@@ -149,6 +149,7 @@ export async function submitQuote(
 }
 
 export async function markDeliveryFailed(quoteId: string, claimToken: string, error: string) {
+  if (!z.string().uuid().safeParse(claimToken).success) return;
   const db = await database();
   const { error: updateError } = await db
     .from("quotes")
