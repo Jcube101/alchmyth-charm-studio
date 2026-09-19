@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Check, Copy, FileText, Info, Paperclip, ShoppingBag, Trash2, Upload } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { calculatePrice, defaultSelection, pricingConfig, snapQuantity, type OrderMode, type PricingSelection, type PricingSku } from "@/lib/pricing";
 import { formatINR, type Product } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/features/store/store-context";
 
 const acceptedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const quoteSchema = z.object({
@@ -126,7 +127,7 @@ function QuoteDialog({ open, onOpenChange, productName, mode, selection, result,
   const charmLabel = config.options.charms.find((item) => item.count === selection.charmCount)?.label ?? "None";
   const fileNames = files.map((file) => file.name);
   const summary = `${reference} — ${productName}\n${config.modes[mode].label} · ${result.quantity} units\nCustomised charms: ${charmLabel} · ${selection.customBranding ? "Custom branding" : "No branding"} · ${selection.delivery} delivery · ${selection.sampleFirst ? "Paid sample first" : "No sample"} · ${selection.ownDesign ? "Own design" : "Catalogue design"}${designDescription.trim() ? `\nDesign: ${designDescription.trim()}` : ""}${fileNames.length ? `\nFiles: ${fileNames.join(", ")}` : ""}\n${formatINR(result.unitPrice)} per unit · ${formatINR(result.total)} total`;
-  const submit = (event: React.FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
     const parsed = quoteSchema.safeParse(fields);
     const nextErrors: QuoteErrors = {};
@@ -142,8 +143,6 @@ function QuoteDialog({ open, onOpenChange, productName, mode, selection, result,
 function QuoteInput({ label, name, value, error, onChange, placeholder, type = "text" }: { label: string; name: keyof QuoteFields; value: string; error?: string; onChange: (value: string) => void; placeholder?: string; type?: string }) {
   return <div><Label htmlFor={`quote-${name}`}>{label}</Label><Input id={`quote-${name}`} type={type} maxLength={name === "event" ? 120 : name === "name" ? 100 : 255} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-1" aria-invalid={Boolean(error)} />{error && <p className="mt-1 text-xs text-destructive" role="alert">{error}</p>}</div>;
 }
-
-import { useStore } from "@/features/store/store-context";
 
 export function DifferenceTooltip() {
   return <div className="group relative"><Button type="button" variant="link" size="sm" className="h-auto px-0 text-xs"><Info />What's the difference?</Button><div role="tooltip" className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-72 border border-border bg-background p-4 text-left text-xs leading-5 shadow-soft group-hover:block group-focus-within:block"><p><strong className="text-primary">Ready Made:</strong> Our existing designs, ready to ship.</p><p className="mt-2"><strong className="text-primary">Custom Order:</strong> A design that isn't in our catalogue. 1 to 30 pieces. Upload your own sketch if you have one.</p><p className="mt-2"><strong className="text-primary">Bulk Order:</strong> 30+ pieces with volume discounts. Great for events, brands and gifting.</p></div></div>;
