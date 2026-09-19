@@ -32,7 +32,7 @@ export const categories: ProductCategory[] = [
 
 const charmDescription = "A playful handmade clay bag charm, shaped and finished in small batches. Each piece carries tiny variations that make it entirely yours.";
 const products: Product[] = [
-  ["heartthrob-hotline", "Heartthrob Hotline", "☎️ 🐈 ❤️", "rose", true],
+  ["heartthrob-hotline", "Heartthrob Hotline", "☎️ 🐈 ❤️", "rose"],
   ["morning-slice", "Morning Slice", "🍞 🌸 🧈", "butter"],
   ["blueberry-bluff", "Blueberry Bluff", "🫐 🎲 💙", "blue"],
   ["olive-the-crab", "Olive the Crab", "🦀 🫒 🍅", "sage"],
