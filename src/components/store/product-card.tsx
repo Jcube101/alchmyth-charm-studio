@@ -8,13 +8,14 @@ import { ProductArt } from "./product-art";
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useStore();
   return (
-    <article className="group overflow-hidden rounded-card border border-border bg-card shadow-soft transition-transform duration-300 hover:-translate-y-1">
-      <Link to="/product/$slug" params={{ slug: product.slug }} aria-label={`View ${product.name}`}>
+    <article className="group overflow-hidden rounded-card border border-border/80 bg-card transition-shadow duration-300 hover:shadow-soft">
+      <Link to="/product/$slug" params={{ slug: product.slug }} aria-label={`View ${product.name}`} className="relative block overflow-hidden">
         <ProductArt product={product} />
+        <span className="absolute inset-x-3 bottom-3 translate-y-4 bg-background/80 px-4 py-3 text-center text-xs font-semibold uppercase text-primary opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">Quick view</span>
       </Link>
-      <div className="p-4">
-        <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{product.category}</p>
-        <Link to="/product/$slug" params={{ slug: product.slug }} className="block min-h-12 font-display text-lg leading-snug hover:text-primary">
+      <div className="p-4 sm:p-5">
+        <p className="mb-2 text-[10px] font-medium uppercase text-muted-foreground">{product.category}</p>
+        <Link to="/product/$slug" params={{ slug: product.slug }} className="block min-h-11 font-display text-base font-medium leading-snug text-primary hover:underline underline-offset-4">
           {product.name}
         </Link>
         <div className="mt-3 flex items-center justify-between gap-3">
