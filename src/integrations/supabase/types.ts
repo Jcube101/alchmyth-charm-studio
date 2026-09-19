@@ -73,7 +73,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_quote_submit_rate_limit: {
+        Args: {
+          p_key: string
+          p_limit?: number
+          p_now: number
+          p_window_ms?: number
+        }
+        Returns: boolean
+      }
+      claim_quote_submission: {
+        Args: {
+          p_claimed_at: string
+          p_quote_id: string
+          p_stale_before: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
