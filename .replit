@@ -41,7 +41,7 @@ externalPort = 3000
 [deployment]
 deploymentTarget = "autoscale"
 run = ["node", ".output/server/index.mjs"]
-build = ["bun", "run", "build"]
+build = ["npm", "run", "build"]
 
 [userenv]
 
