@@ -7,4 +7,4 @@ Use the Node executable installed as a project dependency for the production ser
 
 **Why:** Replit Autoscale deployment hooks did not expose global `node` or `npm` even when a Node module was declared. Running the generated TanStack SSR bundle directly with Bun also failed because Bun rejected valid labeled control-flow syntax in the generated React server code.
 
-**How to apply:** Keep the production build on Bun and invoke the project-local Node binary for the generated Nitro server. If changing runtime or dependency installation, verify the exact production command locally and confirm `/` returns HTTP 200 before publishing.
+**How to apply:** Keep the production build on Bun and invoke the project-local Node binary for the generated Nitro server. Install JavaScript packages through the Bun package path because the Node package path invokes a missing global npm binary. If changing runtime or dependency installation, verify the exact production command locally and confirm `/` returns HTTP 200 before publishing.

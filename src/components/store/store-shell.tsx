@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Mail, Menu, Search, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,27 @@ import {
 import { allProducts, formatINR } from "@/lib/catalog";
 import { useStore } from "@/features/store/store-context";
 import { InteractiveCheckout } from "@/components/ui/interactive-checkout";
+import { useRazorpayCheckout, type CheckoutFeedback } from "@/features/store/use-razorpay-checkout";
 
 function Header() {
   const { cart, cartOpen, searchOpen, setCartOpen, setSearchOpen } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paymentFeedback, setPaymentFeedback] = useState<CheckoutFeedback | null>(null);
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    document.documentElement.dataset["storeHydrated"] = "true";
+    return () => {
+      delete document.documentElement.dataset["storeHydrated"];
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!paymentFeedback) return;
+    const timeout = window.setTimeout(() => setPaymentFeedback(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [paymentFeedback]);
+
   return (
     <>
       <div className="bg-primary px-4 py-2 text-center text-[10px] font-medium text-primary-foreground sm:text-xs">
@@ -76,8 +92,25 @@ function Header() {
         </div>
       </header>
       <MenuSheet open={menuOpen} onOpenChange={setMenuOpen} />
-      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
+      <CartSheet
+        open={cartOpen}
+        onOpenChange={setCartOpen}
+        onPaymentFeedback={setPaymentFeedback}
+      />
       <SearchSheet open={searchOpen} onOpenChange={setSearchOpen} />
+      {paymentFeedback && (
+        <div
+          className={
+            paymentFeedback.kind === "error"
+              ? "pointer-events-none fixed inset-x-4 top-4 z-[100] mx-auto max-w-md border border-destructive bg-background px-4 py-3 text-center text-sm font-medium text-destructive shadow-lg"
+              : "pointer-events-none fixed inset-x-4 top-4 z-[100] mx-auto max-w-md border border-border bg-background px-4 py-3 text-center text-sm font-medium text-primary shadow-lg"
+          }
+          role={paymentFeedback.kind === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {paymentFeedback.message}
+        </div>
+      )}
     </>
   );
 }
@@ -118,14 +151,29 @@ function MenuSheet({
 function CartSheet({
   open,
   onOpenChange,
+  onPaymentFeedback,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPaymentFeedback: (feedback: CheckoutFeedback) => void;
 }) {
   const { cart, clearCart, updateQuantity, removeFromCart } = useStore();
+  const sheetContentRef = useRef<HTMLDivElement>(null);
+  const { beginPayment, paymentMessage, paymentState } = useRazorpayCheckout({
+    cart,
+    sheetOpen: open,
+    sheetContentRef,
+    closeSheet: () => onOpenChange(false),
+    onPaymentSuccess: clearCart,
+    onFeedback: onPaymentFeedback,
+  });
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7">
+      <SheetContent
+        ref={sheetContentRef}
+        data-cart-sheet
+        className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7"
+      >
         <SheetHeader className="pr-10 text-left">
           <p className="text-[10px] font-semibold uppercase text-primary">Your selection</p>
           <SheetTitle className="font-display text-2xl font-medium text-primary">
@@ -140,14 +188,12 @@ function CartSheet({
         <div className="mt-6 flex min-h-0 flex-1">
           <InteractiveCheckout
             cart={cart}
-            active={open}
             updateQuantity={updateQuantity}
             removeFromCart={removeFromCart}
             onContinueShopping={() => onOpenChange(false)}
-            onPaymentSuccess={() => {
-              clearCart();
-              onOpenChange(false);
-            }}
+            onBeginPayment={beginPayment}
+            paymentState={paymentState}
+            paymentMessage={paymentMessage}
           />
         </div>
       </SheetContent>

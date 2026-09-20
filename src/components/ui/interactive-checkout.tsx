@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import {
@@ -19,58 +18,26 @@ import { formatINR, type Product } from "@/lib/catalog";
 
 type CheckoutItem = { product: Product; quantity: number };
 
-type RazorpayResponse = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
-type RazorpayOptions = {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  handler: (response: RazorpayResponse) => void | Promise<void>;
-  modal: { ondismiss: () => void };
-  theme: { color: string };
-};
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayOptions) => { open: () => void; close: () => void };
-  }
-}
-
-let razorpayScriptPromise: Promise<boolean> | null = null;
-
 type InteractiveCheckoutProps = {
   cart: CheckoutItem[];
-  active: boolean;
   updateQuantity: (slug: string, quantity: number) => void;
   removeFromCart: (slug: string) => void;
   onContinueShopping: () => void;
-  onPaymentSuccess: () => void;
+  onBeginPayment: () => void;
+  paymentState: "idle" | "loading" | "error";
+  paymentMessage: string;
 };
 
 export function InteractiveCheckout({
   cart,
-  active,
   updateQuantity,
   removeFromCart,
   onContinueShopping,
-  onPaymentSuccess,
+  onBeginPayment,
+  paymentState,
+  paymentMessage,
 }: InteractiveCheckoutProps) {
   const [view, setView] = useState<"cart" | "summary">("cart");
-  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "error">("idle");
-  const [paymentMessage, setPaymentMessage] = useState("");
-  const attemptRef = useRef(0);
-  const activeRef = useRef(active);
-  const loadingRef = useRef(false);
-  const requestControllerRef = useRef<AbortController | null>(null);
-  const checkoutRef = useRef<{ open: () => void; close: () => void } | null>(null);
-  const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -78,154 +45,6 @@ export function InteractiveCheckout({
   useEffect(() => {
     if (cart.length === 0) setView("cart");
   }, [cart.length]);
-
-  useEffect(() => {
-    activeRef.current = active;
-    if (!active) cancelPaymentAttempt();
-  }, [active]);
-
-  useEffect(() => () => cancelPaymentAttempt(), []);
-
-  function cancelPaymentAttempt() {
-    attemptRef.current += 1;
-    requestControllerRef.current?.abort();
-    requestControllerRef.current = null;
-    checkoutRef.current?.close();
-    checkoutRef.current = null;
-    loadingRef.current = false;
-    setPaymentState("idle");
-    setPaymentMessage("");
-  }
-
-  function loadRazorpay() {
-    if (window.Razorpay) return true;
-    if (razorpayScriptPromise) return razorpayScriptPromise;
-    razorpayScriptPromise = new Promise<boolean>((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => {
-        razorpayScriptPromise = null;
-        resolve(false);
-      };
-      document.body.appendChild(script);
-    });
-    return razorpayScriptPromise;
-  }
-
-  async function beginPayment() {
-    if (loadingRef.current || checkoutRef.current || cart.length === 0) return;
-    loadingRef.current = true;
-    const attempt = ++attemptRef.current;
-    requestControllerRef.current?.abort();
-    const controller = new AbortController();
-    requestControllerRef.current = controller;
-    const isCurrent = () =>
-      activeRef.current && attemptRef.current === attempt && !controller.signal.aborted;
-    setPaymentState("loading");
-    setPaymentMessage("");
-    try {
-      const loaded = await loadRazorpay();
-      if (!isCurrent()) return;
-      if (!loaded || !window.Razorpay)
-        throw new Error(
-          "The secure checkout could not load. Please check your connection and try again.",
-        );
-      const orderItems = cart.map(({ product, quantity }) => ({ product, quantity }));
-      const orderResponse = await fetch("/api/razorpay/order", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          items: orderItems.map(({ product, quantity }) => ({ slug: product.slug, quantity })),
-        }),
-      });
-      const order = (await orderResponse.json()) as {
-        keyId?: string;
-        orderId?: string;
-        amount?: number;
-        currency?: string;
-        error?: string;
-      };
-      if (!isCurrent()) return;
-      if (!orderResponse.ok || !order.keyId || !order.orderId || !order.amount || !order.currency)
-        throw new Error(order.error ?? "The test payment could not start. Please try again.");
-      const checkout = new window.Razorpay({
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Alchmyth",
-        description: `${totalItems} Ready Made item${totalItems === 1 ? "" : "s"}`,
-        order_id: order.orderId,
-        handler: async (response) => {
-          if (!isCurrent()) return;
-          loadingRef.current = true;
-          setPaymentState("loading");
-          try {
-            const verifyResponse = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              signal: controller.signal,
-              body: JSON.stringify({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              }),
-            });
-            if (!verifyResponse.ok) throw new Error("Payment verification failed.");
-            if (!isCurrent()) return;
-            const reference = `ALC-${Date.now().toString().slice(-6)}`;
-            sessionStorage.setItem("alchmyth:lastPaymentReference", reference);
-            checkoutRef.current = null;
-            requestControllerRef.current = null;
-            loadingRef.current = false;
-            onPaymentSuccess();
-            await navigate({ to: "/thank-you", search: { reference } });
-          } catch (error) {
-            if (error instanceof DOMException && error.name === "AbortError") return;
-            if (attemptRef.current !== attempt) return;
-            checkoutRef.current = null;
-            requestControllerRef.current = null;
-            setPaymentState("error");
-            setPaymentMessage("The payment could not be verified. No order has been confirmed.");
-            loadingRef.current = false;
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            if (attemptRef.current !== attempt) return;
-            checkoutRef.current = null;
-            requestControllerRef.current = null;
-            loadingRef.current = false;
-            setPaymentState("idle");
-            setPaymentMessage("");
-          },
-        },
-        theme: { color: "#02682C" },
-      });
-      if (!isCurrent()) {
-        checkout.close();
-        return;
-      }
-      checkoutRef.current = checkout;
-      checkout.open();
-      loadingRef.current = false;
-      setPaymentState("idle");
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      if (!isCurrent()) return;
-      checkoutRef.current = null;
-      requestControllerRef.current = null;
-      setPaymentState("error");
-      setPaymentMessage(
-        error instanceof Error
-          ? error.message
-          : "The test payment could not start. Please try again.",
-      );
-      loadingRef.current = false;
-    }
-  }
 
   const transition = reduceMotion
     ? { duration: 0 }
@@ -408,7 +227,7 @@ export function InteractiveCheckout({
                 <Button
                   size="lg"
                   className="w-full"
-                  onClick={beginPayment}
+                  onClick={onBeginPayment}
                   disabled={paymentState === "loading"}
                 >
                   {paymentState === "loading" ? (
