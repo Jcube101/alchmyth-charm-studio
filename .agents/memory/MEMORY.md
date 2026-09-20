@@ -1,0 +1,1 @@
+- [Self-contained Node deployment runtime](deployment-node-runtime.md) — Autoscale must use the Bun-installed Node binary; global node/npm may be absent despite module declarations.

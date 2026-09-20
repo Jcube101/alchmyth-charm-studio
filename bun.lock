@@ -42,10 +42,13 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
+        "drizzle-orm": "^0.45.2",
         "embla-carousel-react": "^8.6.0",
         "framer-motion": "^13.4.0",
         "input-otp": "^1.4.2",
         "lucide-react": "^0.575.0",
+        "node-linux-x64": "22.23.2",
+        "postgres": "^3.4.9",
         "react": "^19.2.0",
         "react-day-picker": "^9.14.0",
         "react-dom": "^19.2.0",
@@ -68,7 +71,6 @@
         "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^5.2.0",
         "drizzle-kit": "^0.31.10",
-        "drizzle-orm": "^0.45.2",
         "eslint": "^9.32.0",
         "eslint-config-prettier": "^10.1.1",
         "eslint-plugin-prettier": "^5.2.6",
@@ -76,7 +78,6 @@
         "eslint-plugin-react-refresh": "^0.4.20",
         "globals": "^15.15.0",
         "nitro": "3.0.260603-beta",
-        "postgres": "^3.4.9",
         "prettier": "^3.7.3",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.56.1",
@@ -896,6 +897,8 @@
     "nf3": ["nf3@0.3.24", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/nf3/-/nf3-0.3.24.tgz", {}, "sha512-HxLK4bo+5jNsEETZp4w3tJblHOA9MCBY14IN9nZJJV8JDxt9yNIYxuBuLMjTAR5GFa3HL61+8VQDUrXv3/C8fw=="],
 
     "nitro": ["nitro@3.0.260603-beta", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/nitro/-/nitro-3.0.260603-beta.tgz", { "dependencies": { "consola": "^3.4.2", "crossws": "^0.4.5", "db0": "^0.3.4", "env-runner": "^0.1.9", "h3": "^2.0.1-rc.22", "hookable": "^6.1.1", "nf3": "^0.3.17", "ocache": "^0.1.4", "ofetch": "^2.0.0-alpha.3", "ohash": "^2.0.11", "rolldown": "^1.0.3", "srvx": "^0.11.16", "unenv": "^2.0.0-rc.24", "unstorage": "^2.0.0-alpha.7" }, "peerDependencies": { "@vercel/queue": "^0.2.0", "dotenv": "*", "giget": "*", "jiti": "^2.7.0", "rollup": "^4.60.4", "vite": "^7 || ^8", "xml2js": "^0.6.2", "zephyr-agent": "^0.2.0" }, "optionalPeers": ["@vercel/queue", "dotenv", "giget", "jiti", "rollup", "vite", "xml2js", "zephyr-agent"], "bin": { "nitro": "dist/cli/index.mjs" } }, "sha512-ffaSHK00a7YDlDizoEHwcxPwpQpdBRRA8k42ymTsRnfl3ipGeKgv4gnPr6DgmCNTo4tYVPK3bHBEv1gNhWpo/A=="],
+
+    "node-linux-x64": ["node-linux-x64@22.23.2", "http://package-firewall.replit.internal/npm/node-linux-x64/-/node-linux-x64-22.23.2.tgz", { "os": "linux", "cpu": "x64", "bin": { "node": "bin/node" } }, "sha512-lfi+07N7Y+NCz+WrWIu+VmHkXuTLuDv6JLpCAH5n+MvZeG4x9SoSGVJ+h8lUJwJKXGwZUJCdDXo6zZoLw16RGA=="],
 
     "node-releases": ["node-releases@2.0.56", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/node-releases/-/node-releases-2.0.56.tgz", {}, "sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A=="],
 
