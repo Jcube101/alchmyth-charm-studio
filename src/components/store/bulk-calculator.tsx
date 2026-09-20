@@ -627,7 +627,11 @@ function QuoteDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto rounded-card">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl text-primary">
-            {submitted ? "Your quote is ready" : "Tell us about your order"}
+            {emailState === "success"
+              ? "Thank you for your quote request"
+              : submitted
+                ? "Your quote preview is ready"
+                : "Tell us about your order"}
           </DialogTitle>
           <DialogDescription>
             {submitted
@@ -640,6 +644,17 @@ function QuoteDialog({
             <div className="mb-4 grid size-10 place-items-center bg-primary text-primary-foreground">
               <Check />
             </div>
+            {emailState === "success" ? (
+              <p className="mb-5 text-sm leading-6 text-muted-foreground" role="status">
+                Your quote was raised successfully. Thank you for getting in touch — we’ll review
+                the details and get back to you soon.
+              </p>
+            ) : (
+              <p className="mb-5 text-sm leading-6 text-muted-foreground">
+                Review your quote preview, then add your contact details below to send the request
+                to our team.
+              </p>
+            )}
             <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
               {serverSummary}
             </pre>
@@ -659,11 +674,11 @@ function QuoteDialog({
             </Button>
             {emailState === "success" ? (
               <p className="mt-5 text-sm font-semibold text-primary">
-                Thanks! We're reviewing your quote and will email it to you shortly.
+                Thank you! Your quote was submitted successfully. We’ll get back to you soon.
               </p>
             ) : (
               <form className="mt-6 space-y-3 border-t border-border pt-5" onSubmit={emailQuote}>
-                <p className="text-sm font-semibold">Email me this quote</p>
+                <p className="text-sm font-semibold">Send this quote request</p>
                 <QuoteInput
                   label="Name"
                   name="name"
@@ -686,7 +701,7 @@ function QuoteDialog({
                   onChange={(value) => setEmailFields((current) => ({ ...current, phone: value }))}
                 />
                 <Button type="submit" className="w-full" disabled={emailState === "loading"}>
-                  {emailState === "loading" ? "Sending…" : "Email me this quote"}
+                  {emailState === "loading" ? "Sending…" : "Send quote request"}
                 </Button>
               </form>
             )}

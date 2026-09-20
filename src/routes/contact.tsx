@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Instagram, Mail } from "lucide-react";
 export const Route = createFileRoute("/contact")({ head: () => ({ meta: [
-  { title: "Contact — Alchmyth" }, { name: "description", content: "Get in touch with Alchmyth about handmade orders, collaborations and questions." },
+  { title: "Alchmyth" }, { name: "description", content: "Get in touch with Alchmyth about handmade orders, collaborations and questions." },
   { property: "og:title", content: "Contact — Alchmyth" }, { property: "og:description", content: "Say hello to the Alchmyth studio." },
   { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
 ] }), component: ContactPage });

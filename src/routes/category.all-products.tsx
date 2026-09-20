@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/category/all-products")({
   validateSearch: (search: Record<string, unknown>) => ({ category: typeof search["category"] === "string" ? search["category"] : "all" }),
   head: () => ({ meta: [
-    { title: "All Products — Alchmyth" }, { name: "description", content: "Shop all handmade clay charms, stationery and illustrated accessories from Alchmyth." },
+    { title: "Alchmyth" }, { name: "description", content: "Shop all handmade clay charms, stationery and illustrated accessories from Alchmyth." },
     { property: "og:title", content: "All Products — Alchmyth" }, { property: "og:description", content: "Browse Alchmyth's playful handmade collection." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ]}), component: AllProductsPage,

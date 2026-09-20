@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import {
   ArrowLeft,
-  CheckCircle2,
-  Copy,
   CreditCard,
   LoaderCircle,
   Minus,
@@ -15,13 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ProductArt } from "@/components/store/product-art";
 import { formatINR, type Product } from "@/lib/catalog";
 
@@ -47,39 +39,38 @@ type RazorpayOptions = {
 
 declare global {
   interface Window {
-    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+    Razorpay?: new (options: RazorpayOptions) => { open: () => void; close: () => void };
   }
 }
 
+let razorpayScriptPromise: Promise<boolean> | null = null;
+
 type InteractiveCheckoutProps = {
   cart: CheckoutItem[];
-  checkoutRequest: number;
+  active: boolean;
   updateQuantity: (slug: string, quantity: number) => void;
   removeFromCart: (slug: string) => void;
   onContinueShopping: () => void;
+  onPaymentSuccess: () => void;
 };
 
 export function InteractiveCheckout({
   cart,
-  checkoutRequest,
+  active,
   updateQuantity,
   removeFromCart,
   onContinueShopping,
+  onPaymentSuccess,
 }: InteractiveCheckoutProps) {
   const [view, setView] = useState<"cart" | "summary">("cart");
-  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "success" | "error">(
-    "idle",
-  );
+  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "error">("idle");
   const [paymentMessage, setPaymentMessage] = useState("");
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [verifiedOrder, setVerifiedOrder] = useState<{
-    reference: string;
-    razorpayOrderId: string;
-    paymentId: string;
-    items: CheckoutItem[];
-    total: number;
-  } | null>(null);
+  const attemptRef = useRef(0);
+  const activeRef = useRef(active);
+  const loadingRef = useRef(false);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const checkoutRef = useRef<{ open: () => void; close: () => void } | null>(null);
+  const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -89,40 +80,63 @@ export function InteractiveCheckout({
   }, [cart.length]);
 
   useEffect(() => {
-    if (checkoutRequest === 0 || cart.length === 0) return;
-    setView("summary");
-    void beginPayment();
-  }, [checkoutRequest]);
+    activeRef.current = active;
+    if (!active) cancelPaymentAttempt();
+  }, [active]);
 
-  async function loadRazorpay() {
+  useEffect(() => () => cancelPaymentAttempt(), []);
+
+  function cancelPaymentAttempt() {
+    attemptRef.current += 1;
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
+    checkoutRef.current?.close();
+    checkoutRef.current = null;
+    loadingRef.current = false;
+    setPaymentState("idle");
+    setPaymentMessage("");
+  }
+
+  function loadRazorpay() {
     if (window.Razorpay) return true;
-    return new Promise<boolean>((resolve) => {
+    if (razorpayScriptPromise) return razorpayScriptPromise;
+    razorpayScriptPromise = new Promise<boolean>((resolve) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
+      script.onerror = () => {
+        razorpayScriptPromise = null;
+        resolve(false);
+      };
       document.body.appendChild(script);
     });
+    return razorpayScriptPromise;
   }
 
   async function beginPayment() {
+    if (loadingRef.current || checkoutRef.current || cart.length === 0) return;
+    loadingRef.current = true;
+    const attempt = ++attemptRef.current;
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
+    const isCurrent = () =>
+      activeRef.current && attemptRef.current === attempt && !controller.signal.aborted;
     setPaymentState("loading");
     setPaymentMessage("");
     try {
       const loaded = await loadRazorpay();
+      if (!isCurrent()) return;
       if (!loaded || !window.Razorpay)
         throw new Error(
           "The secure checkout could not load. Please check your connection and try again.",
         );
       const orderItems = cart.map(({ product, quantity }) => ({ product, quantity }));
-      const orderTotal = orderItems.reduce(
-        (sum, item) => sum + item.product.price * item.quantity,
-        0,
-      );
       const orderResponse = await fetch("/api/razorpay/order", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           items: orderItems.map(({ product, quantity }) => ({ slug: product.slug, quantity })),
         }),
@@ -134,6 +148,7 @@ export function InteractiveCheckout({
         currency?: string;
         error?: string;
       };
+      if (!isCurrent()) return;
       if (!orderResponse.ok || !order.keyId || !order.orderId || !order.amount || !order.currency)
         throw new Error(order.error ?? "The test payment could not start. Please try again.");
       const checkout = new window.Razorpay({
@@ -144,10 +159,14 @@ export function InteractiveCheckout({
         description: `${totalItems} Ready Made item${totalItems === 1 ? "" : "s"}`,
         order_id: order.orderId,
         handler: async (response) => {
+          if (!isCurrent()) return;
+          loadingRef.current = true;
+          setPaymentState("loading");
           try {
             const verifyResponse = await fetch("/api/razorpay/verify", {
               method: "POST",
               headers: { "content-type": "application/json" },
+              signal: controller.signal,
               body: JSON.stringify({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
@@ -155,33 +174,56 @@ export function InteractiveCheckout({
               }),
             });
             if (!verifyResponse.ok) throw new Error("Payment verification failed.");
-            setPaymentState("success");
-            setPaymentMessage(`Test payment verified · ${response.razorpay_payment_id}`);
-            setVerifiedOrder({
-              reference: `ALC-${Date.now().toString().slice(-6)}`,
-              razorpayOrderId: response.razorpay_order_id,
-              paymentId: response.razorpay_payment_id,
-              items: orderItems,
-              total: orderTotal,
-            });
-            setCopied(false);
-            setConfirmationOpen(true);
-          } catch {
+            if (!isCurrent()) return;
+            const reference = `ALC-${Date.now().toString().slice(-6)}`;
+            sessionStorage.setItem("alchmyth:lastPaymentReference", reference);
+            checkoutRef.current = null;
+            requestControllerRef.current = null;
+            loadingRef.current = false;
+            onPaymentSuccess();
+            await navigate({ to: "/thank-you", search: { reference } });
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            if (attemptRef.current !== attempt) return;
+            checkoutRef.current = null;
+            requestControllerRef.current = null;
             setPaymentState("error");
             setPaymentMessage("The payment could not be verified. No order has been confirmed.");
+            loadingRef.current = false;
           }
         },
-        modal: { ondismiss: () => setPaymentState("idle") },
+        modal: {
+          ondismiss: () => {
+            if (attemptRef.current !== attempt) return;
+            checkoutRef.current = null;
+            requestControllerRef.current = null;
+            loadingRef.current = false;
+            setPaymentState("idle");
+            setPaymentMessage("");
+          },
+        },
         theme: { color: "#02682C" },
       });
+      if (!isCurrent()) {
+        checkout.close();
+        return;
+      }
+      checkoutRef.current = checkout;
       checkout.open();
+      loadingRef.current = false;
+      setPaymentState("idle");
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (!isCurrent()) return;
+      checkoutRef.current = null;
+      requestControllerRef.current = null;
       setPaymentState("error");
       setPaymentMessage(
         error instanceof Error
           ? error.message
           : "The test payment could not start. Please try again.",
       );
+      loadingRef.current = false;
     }
   }
 
@@ -362,153 +404,35 @@ export function InteractiveCheckout({
                   />
                 </span>
               </div>
-              {paymentState === "success" ? (
-                <div
-                  className="mt-5 border border-success bg-secondary p-5 text-center"
-                  role="status"
+              <div className="mt-5">
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={beginPayment}
+                  disabled={paymentState === "loading"}
                 >
-                  <CheckCircle2 className="mx-auto size-10 text-success" />
-                  <p className="mt-4 font-display text-xl font-medium text-primary">
-                    Test payment successful
-                  </p>
-                  <p className="mt-2 break-all text-sm leading-6 text-muted-foreground">
+                  {paymentState === "loading" ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : (
+                    <CreditCard />
+                  )}
+                  {paymentState === "loading"
+                    ? "Opening secure checkout…"
+                    : `Pay ${formatINR(totalPrice)}`}
+                </Button>
+                <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="size-4 text-success" /> Secure Razorpay Test Mode checkout
+                </p>
+                {paymentState === "error" && (
+                  <p className="mt-3 text-center text-sm text-destructive" role="alert">
                     {paymentMessage}
                   </p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => setConfirmationOpen(true)}
-                  >
-                    View order details
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-5">
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={beginPayment}
-                    disabled={paymentState === "loading"}
-                  >
-                    {paymentState === "loading" ? (
-                      <LoaderCircle className="animate-spin" />
-                    ) : (
-                      <CreditCard />
-                    )}
-                    {paymentState === "loading"
-                      ? "Opening secure checkout…"
-                      : `Pay ${formatINR(totalPrice)}`}
-                  </Button>
-                  <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <ShieldCheck className="size-4 text-success" /> Secure Razorpay Test Mode
-                    checkout
-                  </p>
-                  {paymentState === "error" && (
-                    <p className="mt-3 text-center text-sm text-destructive" role="alert">
-                      {paymentMessage}
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-      <OrderConfirmationDialog
-        order={verifiedOrder}
-        open={confirmationOpen}
-        copied={copied}
-        onCopied={setCopied}
-        onOpenChange={setConfirmationOpen}
-      />
     </div>
-  );
-}
-
-function OrderConfirmationDialog({
-  order,
-  open,
-  copied,
-  onCopied,
-  onOpenChange,
-}: {
-  order: {
-    reference: string;
-    razorpayOrderId: string;
-    paymentId: string;
-    items: CheckoutItem[];
-    total: number;
-  } | null;
-  open: boolean;
-  copied: boolean;
-  onCopied: (copied: boolean) => void;
-  onOpenChange: (open: boolean) => void;
-}) {
-  if (!order) return null;
-  const itemLines = order.items.map(
-    ({ product, quantity }) =>
-      `${product.name} · ${quantity} × ${formatINR(product.price)} = ${formatINR(product.price * quantity)}`,
-  );
-  const summary = `${order.reference} — Alchmyth Ready Made order\n${itemLines.join("\n")}\nTotal: ${formatINR(order.total)}\nRazorpay order: ${order.razorpayOrderId}\nPayment: ${order.paymentId}`;
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-card">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl text-primary">
-            Your order is confirmed
-          </DialogTitle>
-          <DialogDescription>Reference {order.reference}</DialogDescription>
-        </DialogHeader>
-        <div className="bg-secondary p-5">
-          <div className="mb-4 grid size-10 place-items-center bg-success text-primary-foreground">
-            <CheckCircle2 />
-          </div>
-          <p className="text-xs font-bold uppercase text-primary">
-            Ready Made · Razorpay Test Mode
-          </p>
-          <div className="mt-4 space-y-3">
-            {order.items.map(({ product, quantity }) => (
-              <div
-                key={product.slug}
-                className="flex justify-between gap-4 border-b border-border pb-3 text-sm"
-              >
-                <div>
-                  <p className="font-semibold text-primary">{product.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {quantity} × {formatINR(product.price)}
-                  </p>
-                </div>
-                <span className="font-semibold">{formatINR(product.price * quantity)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex justify-between font-display text-xl">
-            <span>Total paid</span>
-            <strong className="text-primary">{formatINR(order.total)}</strong>
-          </div>
-          <dl className="mt-5 space-y-2 text-xs">
-            <div>
-              <dt className="text-muted-foreground">Razorpay order</dt>
-              <dd className="break-all">{order.razorpayOrderId}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Payment</dt>
-              <dd className="break-all">{order.paymentId}</dd>
-            </div>
-          </dl>
-          <Button
-            variant="outline"
-            className="mt-5 w-full"
-            onClick={async () => {
-              await navigator.clipboard.writeText(summary);
-              onCopied(true);
-            }}
-          >
-            <Copy />
-            {copied ? "Copied" : "Copy order summary"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

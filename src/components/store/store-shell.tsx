@@ -122,7 +122,7 @@ function CartSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { cart, checkoutRequest, updateQuantity, removeFromCart } = useStore();
+  const { cart, clearCart, updateQuantity, removeFromCart } = useStore();
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col bg-background px-5 pb-6 pt-7 sm:max-w-lg sm:px-7">
@@ -140,10 +140,14 @@ function CartSheet({
         <div className="mt-6 flex min-h-0 flex-1">
           <InteractiveCheckout
             cart={cart}
-            checkoutRequest={checkoutRequest}
+            active={open}
             updateQuantity={updateQuantity}
             removeFromCart={removeFromCart}
             onContinueShopping={() => onOpenChange(false)}
+            onPaymentSuccess={() => {
+              clearCart();
+              onOpenChange(false);
+            }}
           />
         </div>
       </SheetContent>
@@ -239,6 +243,9 @@ function Footer() {
             <Button type="submit">Subscribe</Button>
           </div>
         </form>
+      </div>
+      <div className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">
+        Made by JAM sesh
       </div>
     </footer>
   );

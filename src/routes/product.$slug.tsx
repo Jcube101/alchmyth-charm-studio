@@ -11,7 +11,7 @@ import { useStore } from "@/features/store/store-context";
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => { const product = getProduct(params.slug); if (!product) throw notFound(); return product; },
   head: ({ loaderData }) => ({ meta: [
-    { title: loaderData ? `${loaderData.name} — Alchmyth` : "Product unavailable — Alchmyth" },
+    { title: "Alchmyth" },
     { name: "description", content: loaderData?.description ?? "This Alchmyth product is unavailable." },
     { property: "og:title", content: loaderData ? `${loaderData.name} — Alchmyth` : "Product unavailable — Alchmyth" },
     { property: "og:description", content: loaderData?.description ?? "This Alchmyth product is unavailable." },

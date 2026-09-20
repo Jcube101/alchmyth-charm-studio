@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as CategoryAllProductsRouteImport } from './routes/category.all-products'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as ApiQuotesIndexRouteImport } from './routes/api/quotes/index'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThankYouRoute = ThankYouRouteImport.update({
+  id: '/thank-you',
+  path: '/thank-you',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoryAllProductsRoute = CategoryAllProductsRouteImport.update({
@@ -86,6 +92,7 @@ const ApiQuotesQuoteIdSubmitRoute = ApiQuotesQuoteIdSubmitRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/contact'
+    | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
     | '/api/quotes/$quoteId'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/contact'
+    | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
     | '/api/quotes/$quoteId'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/contact'
+    | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
     | '/api/quotes/$quoteId'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContactRoute: typeof ContactRoute
+  ThankYouRoute: typeof ThankYouRoute
   CategoryAllProductsRoute: typeof CategoryAllProductsRoute
   ProductSlugRoute: typeof ProductSlugRoute
   ApiQuotesQuoteIdRoute: typeof ApiQuotesQuoteIdRouteWithChildren
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thank-you': {
+      id: '/thank-you'
+      path: '/thank-you'
+      fullPath: '/thank-you'
+      preLoaderRoute: typeof ThankYouRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category/all-products': {
@@ -289,6 +309,7 @@ const ApiQuotesQuoteIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
+  ThankYouRoute: ThankYouRoute,
   CategoryAllProductsRoute: CategoryAllProductsRoute,
   ProductSlugRoute: ProductSlugRoute,
   ApiQuotesQuoteIdRoute: ApiQuotesQuoteIdRouteWithChildren,
