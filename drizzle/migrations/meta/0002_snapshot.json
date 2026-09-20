@@ -1,0 +1,271 @@
+{
+  "id": "b6ae2f8f-fbd7-4415-9474-029ef0d9ff43",
+  "prevId": "8816285e-a42d-4c04-bb74-28aab6111e08",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "fulfillment_status": {
+          "name": "fulfillment_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_ready'"
+        },
+        "items": {
+          "name": "items",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "razorpay_order_id": {
+          "name": "razorpay_order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "razorpay_payment_id": {
+          "name": "razorpay_payment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_payment_status": {
+          "name": "provider_payment_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "orders_reference_unique": {
+          "name": "orders_reference_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "reference"
+          ]
+        },
+        "orders_razorpay_order_id_unique": {
+          "name": "orders_razorpay_order_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "razorpay_order_id"
+          ]
+        },
+        "orders_razorpay_payment_id_unique": {
+          "name": "orders_razorpay_payment_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "razorpay_payment_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "orders_status_check": {
+          "name": "orders_status_check",
+          "value": "\"orders\".\"status\" in ('pending', 'paid')"
+        },
+        "orders_fulfillment_status_check": {
+          "name": "orders_fulfillment_status_check",
+          "value": "\"orders\".\"fulfillment_status\" in ('not_ready', 'unfulfilled', 'fulfilled')"
+        },
+        "orders_amount_check": {
+          "name": "orders_amount_check",
+          "value": "\"orders\".\"amount\" > 0"
+        },
+        "orders_currency_check": {
+          "name": "orders_currency_check",
+          "value": "\"orders\".\"currency\" = 'INR'"
+        },
+        "orders_paid_state_check": {
+          "name": "orders_paid_state_check",
+          "value": "(\"orders\".\"status\" = 'pending' and \"orders\".\"paid_at\" is null and \"orders\".\"razorpay_payment_id\" is null and \"orders\".\"provider_payment_status\" is null and \"orders\".\"fulfillment_status\" = 'not_ready') or (\"orders\".\"status\" = 'paid' and \"orders\".\"paid_at\" is not null and \"orders\".\"razorpay_order_id\" is not null and \"orders\".\"razorpay_payment_id\" is not null and \"orders\".\"provider_payment_status\" = 'captured' and \"orders\".\"fulfillment_status\" in ('unfulfilled', 'fulfilled'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.quote_submit_limits": {
+      "name": "quote_submit_limits",
+      "schema": "",
+      "columns": {
+        "limiter_key": {
+          "name": "limiter_key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_started_at": {
+          "name": "window_started_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_count": {
+          "name": "request_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "quote_submit_limits_request_count_check": {
+          "name": "quote_submit_limits_request_count_check",
+          "value": "\"quote_submit_limits\".\"request_count\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.quotes": {
+      "name": "quotes",
+      "schema": "",
+      "columns": {
+        "quote_id": {
+          "name": "quote_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer": {
+          "name": "customer",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submission_claimed_at": {
+          "name": "submission_claimed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submission_claim_token": {
+          "name": "submission_claim_token",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "quotes_status_check": {
+          "name": "quotes_status_check",
+          "value": "\"quotes\".\"status\" in ('generated', 'pending_approval', 'approved', 'rejected', 'sent', 'delivery_failed')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

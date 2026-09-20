@@ -186,13 +186,16 @@ export function useRazorpayCheckout({
                 razorpaySignature: response.razorpay_signature,
               }),
             });
-            if (!verifyResponse.ok) throw new Error("Payment verification failed.");
+            const verification = (await verifyResponse.json()) as {
+              reference?: string;
+              error?: string;
+            };
+            if (!verifyResponse.ok || !verification.reference)
+              throw new Error(verification.error ?? "Payment verification failed.");
             if (!isCurrent()) return;
-            const reference = `ALC-${Date.now().toString().slice(-6)}`;
-            sessionStorage.setItem("alchmyth:lastPaymentReference", reference);
             resetAttempt();
             onPaymentSuccess();
-            await navigate({ to: "/thank-you", search: { reference } });
+            await navigate({ to: "/thank-you", search: { reference: verification.reference } });
           } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") return;
             if (attemptRef.current !== attempt) return;

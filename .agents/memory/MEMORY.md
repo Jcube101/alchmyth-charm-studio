@@ -1,1 +1,2 @@
 - [Self-contained Node deployment runtime](deployment-node-runtime.md) — Autoscale must use the Bun-installed Node binary; global node/npm may be absent despite module declarations.
+- [Playwright temporary port mapping](playwright-port-mapping.md) — E2E web servers can add their port to .replit; remove the generated mapping after tests.

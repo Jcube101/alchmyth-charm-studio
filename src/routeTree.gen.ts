@@ -14,12 +14,14 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as CategoryAllProductsRouteImport } from './routes/category.all-products'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as ApiOrdersReferenceRouteImport } from './routes/api/orders/$reference'
 import { Route as ApiQuotesIndexRouteImport } from './routes/api/quotes/index'
 import { Route as ApiQuotesQuoteIdRouteImport } from './routes/api/quotes/$quoteId'
 import { Route as ApiQuotesDevPreviewRouteImport } from './routes/api/quotes/dev-preview'
 import { Route as ApiQuotesDevTestRouteImport } from './routes/api/quotes/dev-test'
 import { Route as ApiRazorpayOrderRouteImport } from './routes/api/razorpay/order'
 import { Route as ApiRazorpayVerifyRouteImport } from './routes/api/razorpay/verify'
+import { Route as ApiRazorpayWebhookRouteImport } from './routes/api/razorpay/webhook'
 import { Route as ApiQuotesQuoteIdStatusRouteImport } from './routes/api/quotes/$quoteId/status'
 import { Route as ApiQuotesQuoteIdSubmitRouteImport } from './routes/api/quotes/$quoteId/submit'
 
@@ -46,6 +48,11 @@ const CategoryAllProductsRoute = CategoryAllProductsRouteImport.update({
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrdersReferenceRoute = ApiOrdersReferenceRouteImport.update({
+  id: '/api/orders/$reference',
+  path: '/api/orders/$reference',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiQuotesIndexRoute = ApiQuotesIndexRouteImport.update({
@@ -78,6 +85,11 @@ const ApiRazorpayVerifyRoute = ApiRazorpayVerifyRouteImport.update({
   path: '/api/razorpay/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRazorpayWebhookRoute = ApiRazorpayWebhookRouteImport.update({
+  id: '/api/razorpay/webhook',
+  path: '/api/razorpay/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiQuotesQuoteIdStatusRoute = ApiQuotesQuoteIdStatusRouteImport.update({
   id: '/status',
   path: '/status',
@@ -95,11 +107,13 @@ export interface FileRoutesByFullPath {
   '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/orders/$reference': typeof ApiOrdersReferenceRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
   '/api/razorpay/order': typeof ApiRazorpayOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
   '/api/quotes/': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -110,11 +124,13 @@ export interface FileRoutesByTo {
   '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/orders/$reference': typeof ApiOrdersReferenceRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
   '/api/razorpay/order': typeof ApiRazorpayOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
   '/api/quotes': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -126,11 +142,13 @@ export interface FileRoutesById {
   '/thank-you': typeof ThankYouRoute
   '/category/all-products': typeof CategoryAllProductsRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/api/orders/$reference': typeof ApiOrdersReferenceRoute
   '/api/quotes/$quoteId': typeof ApiQuotesQuoteIdRouteWithChildren
   '/api/quotes/dev-preview': typeof ApiQuotesDevPreviewRoute
   '/api/quotes/dev-test': typeof ApiQuotesDevTestRoute
   '/api/razorpay/order': typeof ApiRazorpayOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
   '/api/quotes/': typeof ApiQuotesIndexRoute
   '/api/quotes/$quoteId/status': typeof ApiQuotesQuoteIdStatusRoute
   '/api/quotes/$quoteId/submit': typeof ApiQuotesQuoteIdSubmitRoute
@@ -143,11 +161,13 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
+    | '/api/orders/$reference'
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
     | '/api/razorpay/order'
     | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
     | '/api/quotes/'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -158,11 +178,13 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
+    | '/api/orders/$reference'
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
     | '/api/razorpay/order'
     | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
     | '/api/quotes'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -173,11 +195,13 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/category/all-products'
     | '/product/$slug'
+    | '/api/orders/$reference'
     | '/api/quotes/$quoteId'
     | '/api/quotes/dev-preview'
     | '/api/quotes/dev-test'
     | '/api/razorpay/order'
     | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
     | '/api/quotes/'
     | '/api/quotes/$quoteId/status'
     | '/api/quotes/$quoteId/submit'
@@ -189,11 +213,13 @@ export interface RootRouteChildren {
   ThankYouRoute: typeof ThankYouRoute
   CategoryAllProductsRoute: typeof CategoryAllProductsRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  ApiOrdersReferenceRoute: typeof ApiOrdersReferenceRoute
   ApiQuotesQuoteIdRoute: typeof ApiQuotesQuoteIdRouteWithChildren
   ApiQuotesDevPreviewRoute: typeof ApiQuotesDevPreviewRoute
   ApiQuotesDevTestRoute: typeof ApiQuotesDevTestRoute
   ApiRazorpayOrderRoute: typeof ApiRazorpayOrderRoute
   ApiRazorpayVerifyRoute: typeof ApiRazorpayVerifyRoute
+  ApiRazorpayWebhookRoute: typeof ApiRazorpayWebhookRoute
   ApiQuotesIndexRoute: typeof ApiQuotesIndexRoute
 }
 
@@ -232,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/product/$slug'
       fullPath: '/product/$slug'
       preLoaderRoute: typeof ProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/orders/$reference': {
+      id: '/api/orders/$reference'
+      path: '/api/orders/$reference'
+      fullPath: '/api/orders/$reference'
+      preLoaderRoute: typeof ApiOrdersReferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/quotes/': {
@@ -276,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRazorpayVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/razorpay/webhook': {
+      id: '/api/razorpay/webhook'
+      path: '/api/razorpay/webhook'
+      fullPath: '/api/razorpay/webhook'
+      preLoaderRoute: typeof ApiRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/quotes/$quoteId/status': {
       id: '/api/quotes/$quoteId/status'
       path: '/status'
@@ -312,11 +352,13 @@ const rootRouteChildren: RootRouteChildren = {
   ThankYouRoute: ThankYouRoute,
   CategoryAllProductsRoute: CategoryAllProductsRoute,
   ProductSlugRoute: ProductSlugRoute,
+  ApiOrdersReferenceRoute: ApiOrdersReferenceRoute,
   ApiQuotesQuoteIdRoute: ApiQuotesQuoteIdRouteWithChildren,
   ApiQuotesDevPreviewRoute: ApiQuotesDevPreviewRoute,
   ApiQuotesDevTestRoute: ApiQuotesDevTestRoute,
   ApiRazorpayOrderRoute: ApiRazorpayOrderRoute,
   ApiRazorpayVerifyRoute: ApiRazorpayVerifyRoute,
+  ApiRazorpayWebhookRoute: ApiRazorpayWebhookRoute,
   ApiQuotesIndexRoute: ApiQuotesIndexRoute,
 }
 export const routeTree = rootRouteImport

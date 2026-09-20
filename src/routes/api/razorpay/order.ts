@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createRazorpayOrder, razorpayCartSchema } from "@/lib/razorpay.server";
+import {
+  createRazorpayOrder,
+  razorpayCartSchema,
+  razorpayErrorStatus,
+} from "@/lib/razorpay.server";
 
 export const Route = createFileRoute("/api/razorpay/order")({
   server: {
@@ -11,9 +15,7 @@ export const Route = createFileRoute("/api/razorpay/order")({
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "The test payment could not start.";
-          const status =
-            message.includes("credentials") || message.includes("configured") ? 503 : 400;
-          return Response.json({ error: message }, { status });
+          return Response.json({ error: message }, { status: razorpayErrorStatus(error) });
         }
       },
     },

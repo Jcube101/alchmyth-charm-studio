@@ -8,6 +8,20 @@
       "when": 1789820695320,
       "tag": "0000_glamorous_cammi",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789934990600,
+      "tag": "0001_wealthy_victor_mancha",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789935738039,
+      "tag": "0002_lethal_romulus",
+      "breakpoints": true
     }
   ]
 }

@@ -90,9 +90,28 @@ async function mockPaymentApis(page: Page, verifyStatus = 200) {
     await route.fulfill({
       status: verifyStatus,
       contentType: "application/json",
-      body: JSON.stringify(verifyStatus === 200 ? { verified: true } : { error: "failed" }),
+      body: JSON.stringify(
+        verifyStatus === 200
+          ? { reference: "ALC-0123456789ABCDEF0123456789ABCDEF" }
+          : { error: "failed" },
+      ),
     });
   });
+  await page.route("**/api/orders/ALC-*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        order: {
+          reference: "ALC-0123456789ABCDEF0123456789ABCDEF",
+          status: "paid",
+          itemCount: 1,
+          amount: 189900,
+          currency: "INR",
+        },
+      }),
+    }),
+  );
   return () => orderRequests;
 }
 
@@ -167,7 +186,7 @@ test("shows verification failure outside the sheet and succeeds on retry", async
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ verified: true }),
+      body: JSON.stringify({ reference: "ALC-0123456789ABCDEF0123456789ABCDEF" }),
     }),
   );
   await page.getByRole("button", { name: /Open cart with 1 item/ }).click();
@@ -231,9 +250,24 @@ test("keeps the cart and route unchanged until verification succeeds", async ({ 
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ verified: true }),
+      body: JSON.stringify({ reference: "ALC-0123456789ABCDEF0123456789ABCDEF" }),
     });
   });
+  await page.route("**/api/orders/ALC-*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        order: {
+          reference: "ALC-0123456789ABCDEF0123456789ABCDEF",
+          status: "paid",
+          itemCount: 1,
+          amount: 189900,
+          currency: "INR",
+        },
+      }),
+    }),
+  );
 
   await addProductAndReview(page);
   await page.getByRole("button", { name: /Pay ₹/ }).click();
