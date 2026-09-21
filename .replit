@@ -47,6 +47,5 @@ build = ["bun", "run", "build"]
 
 [userenv.production]
 GST_RATE = "0"
-N8N_WEBHOOK_URL = "https://n8n.job-joseph.com/webhook/8ae8e578-01e4-4ccc-89de-446a34bbf046"
 TAX_MODE = "none"
 PUBLIC_BASE_URL = "https://alchmyth-charm-studio.replit.app"

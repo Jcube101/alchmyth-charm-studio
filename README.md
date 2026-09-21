@@ -1,87 +1,175 @@
 # Alchmyth Charm Studio
 
-Build a front-end-only MVP (React + Vite + Tailwind + shadcn/ui, no backend, all data in code) that recreates the storefront of Alchmyth (https://www.alchmyth.com), a handmade clay charms and illustrated stationery studio in India. The one new feature is a live "Custom / Bulk order" price calculator on bag charm product pages. Customer-facing only. No admin or owner views, and no cost or margin data anywhere in the code.
+Alchmyth Charm Studio is a full-stack storefront for handmade charms and stationery. It includes a responsive product catalog, client-side cart, server-priced Razorpay checkout, and a custom/bulk quote workflow backed by PostgreSQL.
 
-## 1. Storefront (simple replica, not pixel-perfect)
+## Technology
 
-Look and feel: soft, whimsical, Pinterest / cottagecore. Cream background, pastel accents, rounded cards, a friendly rounded sans-serif. Use pastel colour blocks with an emoji instead of product photos (I will swap in real images later). Currency is INR with Indian number formatting (₹1,94,000). Mobile-first and responsive.
+- TanStack Start and TanStack Router
+- React 19 and TypeScript
+- Vite 8 and Tailwind CSS 4
+- Drizzle ORM with PostgreSQL
+- Zod request validation
+- Vitest and Playwright
+- Bun for package management and scripts
 
-Header:
-- Announcement bar: "Free shipping over ₹1999 ⋆.𐙚 ̊ Orders placed between 6 Sep-4 Oct will be dispatched on 5 Oct"
-- "alchmyth" wordmark, nav (All Products, Contact), search icon, Log In, cart icon with a working cart drawer.
+## Features
 
-Home page, in this order:
-- Hero: "Welcome to Alchmyth". Body: "Curate an intentional, tactile gift for yourself or someone else. Shape your space with a little quirk. Discover artisanal accessories, original illustrated goods, and minimalist keepsakes designed to bring vibrancy to your personal style <3"
-- New Arrivals: 8 product cards, each ₹1,899 with an "Add to Cart" button. These are bag charms: Heartthrob Hotline ☎️🐈❤️ (mark Out of Stock), Morning Slice 🍞🌸🧈, Blueberry Bluff 🫐🎲💙, Olive the Crab 🦀🫒🍅, Donut Dribble 🍩🎱☕️, Picnic Catch 🤍🌷🎱, Sunny Side Hotline ☁️☎️🎲, Mermaid's Daydream 🐟🐚☁️
-- Shop by categories (10 tiles): Art Postcards, Artistic Epoxy Keychains, Artistic Stickers, Bag Charms, Charm Earrings, Charm Necklace, Fridge Magnet, Handmade Hairclips, Handmade Worry Stones, Magnetic Bookmarks
-- As Seen on Reels (8 cards): 'Your favourite 🥗 meal' postcard ₹99, Four leaf clover 🍀 epoxy keychain ₹99, 'Lucky girl syndrome' 🔖 magnetic bookmark ₹119, Cute apple 🍎 epoxy keychain ₹99, 'Collecting boyfriends' 🔖 magnetic bookmarks ₹119, Tomato 🍅 Worry Stone ₹249, Stickers / Pack of 14 ₹599, 'Do it for the plot' postcard ₹99
-- "Follow us on Instagram @alchmyth" strip
-- Footer: Shop All, New Arrivals, Bestsellers, About Us, Terms, Privacy, Shipping, Refund, plus a newsletter email signup ("Subscribe for behind-the-scenes messy magic...")
+### Storefront
 
-Routes: / (home), /category/all-products (grid of every product with a category filter), /product/:slug (detail page). Contact can be a simple placeholder.
+- Home, catalog, product, contact, and thank-you pages
+- Responsive search, navigation, and cart drawer
+- Product quantities and cart totals
+- Bag-charm custom/bulk pricing calculator
+- Mobile and desktop layouts
 
-## 2. Product detail page
+### Quote workflow
 
-Standard layout: image block, name, price, description, quantity, Add to Cart.
+Quote prices are always recomputed on the server from product and option selections.
 
-For BAG CHARM products only, add a two-option toggle under the price: "Buy 1" (normal purchase) and "Custom / Bulk order". Selecting "Custom / Bulk order" replaces the purchase box with the calculator below.
+1. `POST /api/quotes` creates a canonical quote with a unique `ALC-######` reference.
+2. The quote is stored in PostgreSQL with its pricing snapshot and a seven-day validity period.
+3. `POST /api/quotes/:quoteId/submit` validates customer details, applies rate limiting, and claims the submission idempotently.
+4. The server builds a self-contained invoice document and sends the canonical payload to the configured n8n webhook.
+5. Delivery failures are persisted so the customer can retry.
+6. `POST /api/quotes/:quoteId/status` accepts authenticated workflow updates when a callback secret is configured.
 
-## 3. Custom / Bulk calculator (the core of this build)
+Public quote responses omit customer details and internal errors. The webhook test route is disabled in production; the invoice-preview route uses static sample data and never reads customer records.
 
-Put ALL pricing rules in one config object plus one pure function in /src/lib/pricing.ts. The UI must contain no pricing logic. Adding another product later should mean adding one config entry, not new code.
+### Razorpay checkout
 
-Config for the bag charm SKU (all values are placeholders that I will edit):
-- basePrice: 1800 per unit
-- moq: 50
-- quantity: slider from 50 to 1000 in steps of 10, plus a number input that snaps to the step
-- roundUpTo: 10
-- volume tiers (discount applies to the base price only, not to add-ons): 50+ = 10%, 100+ = 15%, 250+ = 20%
-- Option groups:
-  1. "Customised charms": slider with 4 stops: None (+₹0/unit), 1 charm (+₹100/unit), 2 charms (+₹180/unit), 3 charms (+₹250/unit)
-  2. "Custom branding (e.g. a flag)": toggle, +₹50/unit
-  3. "Delivery": Standard (no change) or Express (+10% on the per-unit price)
-  4. "Paid sample first": toggle, one-time ₹750 fee, not per unit
+The browser sends product slugs and quantities, never prices. The server resolves the current catalog prices and stores an immutable order snapshot in paise.
 
-Pricing function:
-  discountedBase = basePrice × (1 − tierDiscount)
-  unitPrice = roundUpTo10( (discountedBase + sum of per-unit add-ons) × delivery multiplier )
-  total = unitPrice × quantity + one-time fees
+1. A pending order is persisted before the Razorpay order is created.
+2. Razorpay order IDs, payment IDs, and internal 128-bit references are unique.
+3. Browser verification validates the Razorpay HMAC signature.
+4. The server fetches the provider payment and order and verifies identity, amount, currency, paid order status, and captured payment status.
+5. Signed Razorpay webhooks use the same settlement path as browser verification.
+6. Duplicate callbacks with the same payment are idempotent; conflicting payment associations fail.
+7. The thank-you page shows success only after loading a paid order from the server.
 
-UI behaviour:
-- The panel starts at MOQ 50 with nothing selected. That should show ₹1,620 per unit (₹1,800 struck through, "10% volume discount") and ₹81,000 total.
-- Everything updates instantly on any change, with no submit button and no page reload.
-- Always show: price per unit, total, "You save ₹X" versus list price, and a line-item breakdown (base, discount, each selected add-on, one-time fees).
-- Show the tier ladder ("50+ → 10% off · 100+ → 15% off · 250+ → 20% off") and highlight the active tier. Tell the user how many more units unlock the next tier.
-- Test case that must match: 100 units + 2 customised charms + custom branding + express delivery = ₹1,940 per unit, ₹1,94,000 total.
+## Routes
 
-Below the totals, add a "Request this quote" button. It opens a dialog (name, email/WhatsApp, event or occasion, notes, needed-by date). On submit, show a confirmation card with a quote reference number and a summary of the selections, per-unit price and total, with a "Copy quote summary" button. Nothing is sent anywhere. Add a small line: "Quote valid for 7 days. 50% advance to confirm."
+Customer pages:
 
-## 4. Build order
-1. Storefront pages and static data
-2. pricing.ts with the config and function, plus a few unit tests (including the two cases above)
-3. Calculator UI wired to pricing.ts
-4. Quote request dialog and confirmation
-5. Polish: mobile layout, empty and loading states
+- `/`
+- `/category/all-products`
+- `/product/:slug`
+- `/contact`
+- `/thank-you`
 
-Out of scope for now: authentication, payments (Razorpay comes later), an owner dashboard, and a backend or database.
+Server endpoints are under `/api/quotes`, `/api/razorpay`, and `/api/orders`.
 
-This project was built with [Lovable](https://lovable.dev).
+## Local setup
 
-## Build with Lovable
+### Requirements
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ad8ea715-df48-41f0-823a-3a38e4d3c9f7).
+- Bun 1.3 or later
+- PostgreSQL
+- Chromium for Playwright browser tests
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Install dependencies:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install
 ```
+
+Copy the names-only environment template and supply local values through your environment or secret manager:
+
+```sh
+cp .env.example .env
+```
+
+Apply the committed database migrations to an empty or migration-managed development database:
+
+```sh
+bunx drizzle-kit migrate
+```
+
+Start the development server:
+
+```sh
+bun run dev --host 0.0.0.0 --port 5000
+```
+
+## Environment variables
+
+Never commit environment values. Variables used by this project are listed in `.env.example`.
+
+### Required for persisted application flows
+
+- `DATABASE_URL` — PostgreSQL connection used by Drizzle and the server.
+
+### Required for Razorpay checkout
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+
+### Recommended for Razorpay webhooks
+
+- `RAZORPAY_WEBHOOK_SECRET` — dedicated HMAC secret configured for the Razorpay webhook. If absent, the server currently falls back to `RAZORPAY_KEY_SECRET`.
+
+### Quote delivery and callbacks
+
+- `N8N_WEBHOOK_URL` — quote submission webhook. The application has a development/demo default, but deployments should set it explicitly.
+- `N8N_WEBHOOK_SECRET` — optional secret sent to n8n in the webhook header.
+- `QUOTE_CALLBACK_SECRET` — optional secret required from n8n for status callbacks.
+- `PUBLIC_BASE_URL` — public application origin used to build callback URLs; required in production.
+- `TAX_MODE` — optional: `none`, `inclusive`, or `exclusive`; defaults to `none`.
+- `GST_RATE` — optional percentage from 0 to 100; defaults to `0`.
+
+### Platform and test variables
+
+- `REPLIT_DEV_DOMAIN` — Replit development-domain fallback for non-production quote callbacks.
+- `PLAYWRIGHT_CHROMIUM_PATH` — optional Chromium executable override for Playwright.
+- `NODE_ENV` — set by the runtime and used to disable development behavior in production.
+
+## Database
+
+The schema is defined in `drizzle/schema.ts`.
+
+- `quotes` stores canonical quote payloads, customer submission data, delivery state, and idempotency claims.
+- `quote_submit_limits` stores submission rate-limit windows.
+- `orders` stores immutable server-priced carts and pending/paid Razorpay state.
+
+Committed migrations and Drizzle metadata live in `drizzle/migrations/`.
+
+When changing the schema:
+
+1. Edit `drizzle/schema.ts`.
+2. Generate a migration with `bunx drizzle-kit generate`.
+3. Inspect the SQL and generated metadata.
+4. Apply it to the development database with `bunx drizzle-kit migrate`.
+5. Commit the schema, SQL migration, and migration metadata together.
+
+Do not edit an already-deployed migration. Add a new migration instead.
+
+## Validation
+
+```sh
+bun run lint
+bunx tsc --noEmit
+bun run test
+bun run test:e2e
+bun run build
+```
+
+`bun run format` modifies files; use it intentionally rather than as a read-only check.
+
+The Playwright suite starts a temporary server on port 4173. On Replit, check that the test run did not leave a temporary 4173 port entry in `.replit`.
+
+## Deployment
+
+The Replit deployment is configured as an Autoscale application:
+
+- Build: `bun run build`
+- Start: `./node_modules/.bin/node .output/server/index.mjs`
+
+Before publishing:
+
+1. Configure production secrets and environment variables, including the production `DATABASE_URL`, Razorpay credentials, and `PUBLIC_BASE_URL`.
+2. Configure Razorpay to send signed events to `/api/razorpay/webhook` with the same webhook secret used by the application.
+3. Apply the committed migrations to the production database.
+4. Run the validation commands above.
+5. Publish through Replit and verify quote submission, callback delivery, and payment confirmation in the target environment.
+
+Do not place secrets in `.replit`, source files, browser-prefixed variables, or committed environment files.
